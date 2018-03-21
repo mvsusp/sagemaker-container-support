@@ -8,7 +8,7 @@ import sys
 import traceback
 from pprint import pprint
 
-import environment as env
+import container_support.environment as env
 from container_support.serving import Server
 
 PYTHONPATH = 'PYTHONPATH'
@@ -215,7 +215,7 @@ class TrainingEngine(object):
     def run(self):
         training_environment = env.TrainingEnvironment()
         logger.info("started training: {}".format(repr(self.__dict__)))
-
+        exit_code = 0
         try:
             training_environment.start_metrics_if_enabled()
 
@@ -234,7 +234,10 @@ class TrainingEngine(object):
             trc = traceback.format_exc()
             message = 'uncaught exception during training: {}\n{}\n'.format(e, trc)
             training_environment.write_failure_file(message, training_environment.base_dir)
+            exit_code = 1 if not(e, 'errno') else e.errno
             raise e
+        finally:
+            os._exit(exit_code)
 
 
 class ContainerSupport(object):
