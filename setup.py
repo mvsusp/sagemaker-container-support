@@ -11,7 +11,7 @@ def read(fname):
 
 
 setup(
-    name='sagemaker_container_support',
+    name='sagemaker-containers',
     version='1.0',
     description='Open source library for creating containers to run on Amazon SageMaker.',
 
@@ -34,8 +34,9 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
 
-    install_requires=[],
+    install_requires=['Flask', 'boto3', 'six', 'numpy'],
+    dependency_links=['https://github.com/aws/sagemaker-python-sdk/tree/mvs-local-mode#egg=sagemaker-1.1.2'],
     extras_require={
-        'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'pytest-xdist', 'mock', 'Flask', 'boto3']
+        'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'pytest-xdist', 'keras', 'pytest', 'sagemaker']
     }
 )

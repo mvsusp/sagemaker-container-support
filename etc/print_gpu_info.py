@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
 import subprocess
 
 try:
@@ -11,5 +12,5 @@ try:
 
     fields = ','.join(msgs)
     print('gpu_utilization {}'.format(fields))
-except:
+except OSError:
     pass

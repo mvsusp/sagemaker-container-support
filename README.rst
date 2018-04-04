@@ -1,8 +1,8 @@
-===========================
-SageMaker Container Support
-===========================
+====================
+SageMaker Containers
+====================
 
-This support code is used for making machine learning frameworks (e.g. MXNet, TensorFlow) run on Amazon SageMaker.
+A Python library to integrate ml frameworks (e.g. MXNet, TensorFlow) on Amazon SageMaker.
 
 License
 -------

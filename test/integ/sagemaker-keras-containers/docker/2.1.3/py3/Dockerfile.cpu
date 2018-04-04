@@ -1,0 +1,14 @@
+ARG VERSION
+FROM tensorflow/tensorflow:1.7.0-py3
+
+WORKDIR /
+
+RUN pip install keras h5py
+
+COPY test/integ/sagemaker-keras-containers/src/keras_container /keras_container
+
+COPY dist/sagemaker_containers-1.0-py2.py3-none-any.whl /sagemaker_containers-1.0-py2.py3-none-any.whl
+
+RUN pip install /sagemaker_containers-1.0-py2.py3-none-any.whl
+
+ENTRYPOINT ["python", "-m", "keras_container.start"]

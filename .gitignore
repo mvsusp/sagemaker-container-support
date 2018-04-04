@@ -5,5 +5,7 @@
 *.pyc
 venv
 dist
-
 .idea
+build
+.docker
+.tox
