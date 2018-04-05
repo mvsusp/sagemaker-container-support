@@ -14,64 +14,54 @@ import json
 
 import pytest
 import sagemaker_containers.environment as environment
-from sagemaker_containers import TrainingEngine, App
+from sagemaker_containers import Training
 
 
 @pytest.fixture(name='model_file')
-def fixture_model_file(tmpdir):
-    return str(tmpdir.mkdir('output').join('saved_model.json'))
+def fixture_model_file(opt_ml):
+    return str(opt_ml.join('output/saved_model.json'))
 
 
-@pytest.fixture(name='create_user_module')
-def fixture_create_user_module(tmpdir):
+@pytest.fixture(name='opt_ml')
+def create_opt_ml(tmpdir):
     environment.base_dir = str(tmpdir)
-    user_script_file = tmpdir.mkdir('code').join('user_script.py')
+    tmpdir.mkdir('output')
+    tmpdir.mkdir('code')
+    return tmpdir
 
+
+def test_training_from_train_fn(opt_ml, model_file):
     script = "def train(chanel_dirs, hps): return {'trained': True, 'saved': False}"
 
-    user_script_file.write(script)
+    write_user_script(opt_ml, script)
 
-
-def test_register_training_with_decorator(create_user_module, model_file):
-    engine = TrainingEngine()
-
-    @engine.framework_train_fn()
-    def framework_train(user_module, training_environment):
+    def framework_train_fn(user_module, training_environment):
         model = user_module.train(training_environment.channel_dirs, training_environment.hyperparameters)
         save_model(model, model_file)
 
-    app = App()
-    app.register_engine(engine)
-
-    app.run()
+    Training.from_train_fn(train_fn=framework_train_fn).start()
 
     assert load_model(model_file) == {'trained': True, 'saved': True}
 
 
-def test_register_training_with_fn(create_user_module, model_file):
-    def framework_train(user_module, training_environment):
-        model = user_module.train(training_environment.channel_dirs, training_environment.hyperparameters)
-        save_model(model, model_file)
-
-    engine = TrainingEngine(framework_train)
-
-    app = App()
-    app.register_engine(engine)
-
-    app.run()
-
-    assert load_model(model_file) == {'trained': True, 'saved': True}
+def test_training_from_module(opt_ml, model_file):
+    script = """
+import sagemaker_containers.training_environment as env
 
 
-def test_app_run_with_decorator(create_user_module, model_file):
-    app = App()
+def train():
+    model = {'trained': True, 'saved': False}
 
-    @app.training_engine.framework_train_fn()
-    def framework_train(user_module, training_environment):
-        model = user_module.train(training_environment.channel_dirs, training_environment.hyperparameters)
-        save_model(model, model_file)
+    with open(os.path.join(env.model_dir, 'saved_model.json', 'w')) as f:
+        json.dump(model, f)
+        
+if __name__ == '__main__':
+    train()
+"""
 
-    app.run()
+    write_user_module(opt_ml, script)
+
+    Training.from_module(module_name='customer_module.train').start()
 
     assert load_model(model_file) == {'trained': True, 'saved': True}
 
@@ -85,3 +75,17 @@ def save_model(model, model_file):
 def load_model(model_file):
     with open(model_file, 'r') as f:
         return json.load(f)
+
+
+def write_user_script(tmpdir, code):
+    user_script_file = tmpdir.join('code/user_script.py')
+
+    user_script_file.write(code)
+    return str(user_script_file)
+
+
+def write_user_module(tmpdir, code):
+    user_module = tmpdir.mkdir('customer_module').join('train.py')
+
+    user_module.write(code)
+    return str(user_module)

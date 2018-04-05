@@ -15,15 +15,19 @@ from __future__ import absolute_import
 import multiprocessing
 import os
 
+import sys
+
 base_dir = 'opt/ml'
 
 
-class ContainerEnvironment(object):
+class Environment(object):
     """Provides access to common aspects of the container environment, including
     important system characteristics, filesystem locations, and configuration settings.
     """
+
     def __init__(self):
         self.base_dir = base_dir
+        sys.path.insert(0, self.code_dir)
 
     @property
     def model_dir(self):
@@ -43,6 +47,3 @@ class ContainerEnvironment(object):
     def available_gpus(self):
         """The number of gpus available in the current container."""
         pass
-
-
-

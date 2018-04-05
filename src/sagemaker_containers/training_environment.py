@@ -14,10 +14,10 @@ from __future__ import absolute_import
 
 import os
 
-from sagemaker_containers.environment import ContainerEnvironment
+from sagemaker_containers.environment import Environment
 
 
-class TrainingEnvironment(ContainerEnvironment):
+class TrainingEnvironment(Environment):
     """Provides access to aspects of the container environment relevant to training jobs.
     """
 

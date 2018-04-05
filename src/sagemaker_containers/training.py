@@ -12,32 +12,43 @@
 # language governing permissions and limitations under the License.
 from __future__ import absolute_import
 
+import importlib
+import subprocess
+
+import sys
+
 import sagemaker_containers.training_environment as env
-from sagemaker_containers.user_module import UserModule
 
 
-class TrainingEngine(object):
-    def __init__(self, framework_train=None):
-        self.framework_train = framework_train
+class Training(object):
+    def __init__(self, train_fn=None, module_name=None):
         self.environment = env.TrainingEnvironment()
+        self.train_fn = train_fn
+        self.module_name = module_name
 
-    def framework_train_fn(self):
-        def decorator(train_fn):
-            self.framework_train = train_fn
-            return train_fn
+    @classmethod
+    def from_train_fn(cls, train_fn):
+        return cls(train_fn=train_fn)
 
-        return decorator
+    @classmethod
+    def from_module(cls, module_name):
+        return cls(module_name=module_name)
 
-    def run(self):
+    def start(self):
 
         try:
-            user_module = UserModule(self.environment.code_dir, self.framework_train)
+            if self.train_fn:
 
-            user_module.import_()
+                user_module = self.import_user_module(self.environment.code_dir)
 
-            user_module.train(self.environment)
+                self.train_fn(user_module, self.environment)
+            else:
+                subprocess.Popen(['python', '-m', self.module_name])
 
             self.environment.write_success_file()
         except Exception as e:
             self.environment.write_failure_file('Uncaught exception during training: %s' % e)
             raise e
+
+    def import_user_module(self, code_dir, user_script='user_script'):
+        return importlib.import_module(user_script)

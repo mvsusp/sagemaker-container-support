@@ -12,8 +12,7 @@
 # language governing permissions and limitations under the License.
 from __future__ import absolute_import
 
-from sagemaker_containers.app import App
-from sagemaker_containers.training_engine import TrainingEngine
+from sagemaker_containers.training import Training
 from sagemaker_containers.training_environment import TrainingEnvironment
 
-__all__ = [TrainingEnvironment, TrainingEngine, App]
+__all__ = [TrainingEnvironment, Training]
