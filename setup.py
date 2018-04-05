@@ -31,11 +31,5 @@ setup(
         "Programming Language :: Python",
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
-    ],
-
-    install_requires=['Flask', 'boto3', 'six', 'numpy'],
-    dependency_links=['https://github.com/aws/sagemaker-python-sdk/tree/mvs-local-mode#egg=sagemaker-1.1.2'],
-    extras_require={
-        'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'pytest-xdist', 'keras', 'pytest', 'sagemaker']
-    }
+    ]
 )
