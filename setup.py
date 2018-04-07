@@ -3,11 +3,11 @@ from glob import glob
 from os.path import basename
 from os.path import splitext
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+def read(file_name):
+    return open(os.path.join(os.path.dirname(__file__), file_name)).read()
 
 
 setup(
@@ -31,5 +31,8 @@ setup(
         "Programming Language :: Python",
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
-    ]
+    ],
+    extras_require={
+        'test': ['tox', 'flake8', 'pytest', 'pytest-cov']
+    }
 )
