@@ -147,7 +147,7 @@ def keras_framework_training_process(user_module, training_environment):
 Training.from_train_fn(train_fn=keras_framework_training_process).run()
 ```
 
-# TODO (mvsusp) - complete the example after implementing support for Docker containers.
+#TODO (mvsusp) - complete the example after implementing support for Docker containers.
 
 #### An example of user provided script for training:
 __train.py__
