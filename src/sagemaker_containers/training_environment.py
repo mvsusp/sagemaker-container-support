@@ -16,6 +16,11 @@ import os
 
 from sagemaker_containers.environment import Environment
 
+_OUTPUT_BASE_NAME = 'output'
+_DATA_BASE_NAME = 'data'
+_CONFIG_BASE_NAME = 'config'
+_INPUT_BASE_NAME = 'input'
+
 
 # TODO (mvsusp) - create shortcut decorators for methods, e.g.: env.TrainingEnvironment().model_dir -> env.model_dir
 class TrainingEnvironment(Environment):
@@ -65,11 +70,11 @@ class TrainingEnvironment(Environment):
         """
         super(TrainingEnvironment, self).__init__(base_dir)
 
-        self._input_dir = os.path.join(self.base_dir, 'input')
-        self._input_config_dir = os.path.join(self._input_dir, 'config')
-        self._input_data_dir = os.path.join(self._input_dir, 'data')
-        self._output_dir = os.path.join(self.base_dir, 'output')
-        self._output_data_dir = os.path.join(self._output_dir, 'data')
+        self._input_dir = os.path.join(self.base_dir, _INPUT_BASE_NAME)
+        self._input_config_dir = os.path.join(self._input_dir, _CONFIG_BASE_NAME)
+        self._input_data_dir = os.path.join(self._input_dir, _DATA_BASE_NAME)
+        self._output_dir = os.path.join(self.base_dir, _OUTPUT_BASE_NAME)
+        self._output_data_dir = os.path.join(self._output_dir, _DATA_BASE_NAME)
 
     @property
     def input_dir(self):

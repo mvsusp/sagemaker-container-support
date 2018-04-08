@@ -19,10 +19,16 @@ import shlex
 import subprocess
 import sys
 
+BASE_PATH = '/opt/ml'
+
 logger = logging.getLogger(__name__)
 
+_CODE_BASE_NAME = 'code'
+_MODEL_BASE_NAME = 'model'
+
+
 # TODO (mvsusp) -  create a shortcut decorator to allow get/set outside the class, e.g. env.model_dir = 'x'
-base_dir = '/opt/ml'
+base_dir = BASE_PATH
 
 
 class Environment(object):
@@ -38,8 +44,8 @@ class Environment(object):
                 The default base directory in SageMaker is '/opt/ml'
         """
         self.base_dir = base_directory if base_directory else base_dir
-        self._model_dir = os.path.join(self.base_dir, 'model')
-        self._code_dir = os.path.join(self.base_dir, 'code')
+        self._model_dir = os.path.join(self.base_dir, _MODEL_BASE_NAME)
+        self._code_dir = os.path.join(self.base_dir, _CODE_BASE_NAME)
         self._available_cpus = multiprocessing.cpu_count()
         self._available_gpus = get_available_gpus()
 

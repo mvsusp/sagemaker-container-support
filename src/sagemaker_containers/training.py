@@ -19,7 +19,7 @@ import subprocess
 
 import sagemaker_containers.training_environment as env
 
-PYTHONPATH = 'PYTHONPATH'
+_PYTHONPATH = 'PYTHONPATH'
 
 
 class Training(object):
@@ -103,7 +103,7 @@ class Training(object):
                 training_environment: an instance of the `TrainingEnvironment`.
             """
             env_vars = os.environ.copy()
-            env_vars[PYTHONPATH] = '%s:%s' % (training_environment.code_dir, env_vars.get(PYTHONPATH, ''))
+            env_vars[_PYTHONPATH] = '%s:%s' % (training_environment.code_dir, env_vars.get(_PYTHONPATH, ''))
 
             cmd = shlex.split('python -m %s' % module_name)
 
