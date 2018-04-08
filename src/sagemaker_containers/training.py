@@ -25,7 +25,7 @@ PYTHONPATH = 'PYTHONPATH'
 class Training(object):
     """Training class to start training in the container.
 
-    When training starts, the `Training` object ensures that the user script (or python package)
+    When training starts, the `Training` object ensures that the user script (or Python package)
     is imported and executed in a different process, reporting success in the end of the training.
 
     `Training` is responsible for error handling and metrics reporting and reports failures in case
@@ -38,11 +38,12 @@ class Training(object):
         When a training starts, e.g. `Training(training_process_fn).run()`, the `Training` instance
         will execute the following steps:
 
-            1 - install required python dependencies
+            1 - install required Python dependencies
             2 - start required customs metrics
             3 - load training environment
-            4 - start training process by invoking `training_process_fn`
-            5 - report success/failure
+            4 - download the user script (or Python package) containing the functions required by the framework
+            5 - start training process by invoking `training_process_fn`
+            6 - report success/failure
 
         Args:
             training_process_fn: a training process function that will be executed by the `Training`. Signature:

@@ -21,7 +21,7 @@ import sys
 
 logger = logging.getLogger(__name__)
 
-# TODO (mvs) -  create a shortcut decorator to allow get/set outside the class, e.g. env.model_dir = 'x'
+# TODO (mvsusp) -  create a shortcut decorator to allow get/set outside the class, e.g. env.model_dir = 'x'
 base_dir = '/opt/ml'
 
 
@@ -62,10 +62,10 @@ class Environment(object):
     @property
     def code_dir(self):
         """When a SageMaker training jobs starts, the user provided training script
-        (or python package) will be saved in this folder.
+        (or Python package) will be saved in this folder.
 
         Returns:
-            (string): the directory containing the user provided training script (or python package)
+            (string): the directory containing the user provided training script (or Python package)
         """
         return self._code_dir
 

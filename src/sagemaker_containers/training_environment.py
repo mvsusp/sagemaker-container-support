@@ -17,7 +17,7 @@ import os
 from sagemaker_containers.environment import Environment
 
 
-# TODO (mvs) - create shortcut decorators for public methods, e.g.: env.TrainingEnvironment().model_dir -> env.model_dir
+# TODO (mvsusp) - create shortcut decorators for methods, e.g.: env.TrainingEnvironment().model_dir -> env.model_dir
 class TrainingEnvironment(Environment):
     """Provides access to aspects of the training environment relevant to training jobs, including
     hyperparameters, system characteristics, filesystem locations, environment variables and configuration settings.
@@ -157,7 +157,7 @@ class TrainingEnvironment(Environment):
         Returns:
             dict<string, string>
         """
-        # TODO (mvs) - load resource config from file
+        # TODO (mvsusp) - load resource config from file
         return {'current_host': 'algo-1', 'hosts': ['algo-1']}
 
     @property
@@ -167,7 +167,7 @@ class TrainingEnvironment(Environment):
         Returns:
             dict[string, object]: the hyperparameters.
         """
-        # TODO (mvs) - load hyperparameters from file
+        # TODO (mvsusp) - load hyperparameters from file
         return {}
 
     @property
@@ -221,7 +221,7 @@ class TrainingEnvironment(Environment):
         Returns:
             dict<string, string>
         """
-        # TODO (mvs) - load config from file
+        # TODO (mvsusp) - load config from file
         return {}
 
     @property
@@ -241,7 +241,7 @@ class TrainingEnvironment(Environment):
         Returns:
             dict[string, string] with the information about the channels.
         """
-        # TODO (mvs) - load config from file
+        # TODO (mvsusp) - load config from file
         return {}
 
     @property
@@ -251,7 +251,7 @@ class TrainingEnvironment(Environment):
         Returns:
               string: user script name.
         """
-        # TODO (mvs) - implementation
+        # TODO (mvsusp) - implementation
         return 'user_script'
 
     def write_success_file(self, message=None):
@@ -263,7 +263,7 @@ class TrainingEnvironment(Environment):
         Args:
             message (string): the message to be written in the success file.
         """
-        # TODO (mvs) - implementation
+        # TODO (mvsusp) - implementation
         pass
 
     def write_failure_file(self, message):
@@ -277,5 +277,5 @@ class TrainingEnvironment(Environment):
         Args:
             message (string): the message to be written in the failure file.
         """
-        # TODO (mvs) - implementation
+        # TODO (mvsusp) - implementation
         pass
