@@ -10,7 +10,6 @@ def read(file_name):
     return open(os.path.join(os.path.dirname(__file__), file_name)).read()
 
 
-
 setup(
     name='sagemaker_container_support',
     version='2.0.0',
@@ -34,6 +33,6 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
     extras_require={
-        'test': ['tox', 'flake8', 'pytest', 'pytest-cov']
-    }
+        'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'mock']
+    }, install_requires=['boto3', 'PyYAML', 'six']
 )
