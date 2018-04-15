@@ -192,7 +192,7 @@ def gpu_count():  # type: () -> int
         cmd = shlex.split('nvidia-smi --list-gpus')
         output = str(subprocess.check_output(cmd))
         return sum([1 for x in output.split('\n') if x.startswith('GPU ')])
-    except OSError:
+    except (OSError, subprocess.CalledProcessError):
         logger.warning('No GPUs detected (normal if no gpus installed)')
         return 0
 
