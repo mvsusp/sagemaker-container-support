@@ -2,7 +2,6 @@ import json
 import logging
 from itertools import chain
 
-
 from mock import Mock, patch
 
 import pytest
@@ -109,29 +108,29 @@ def test_input_data_config(input_config_path):
 
 
 def test_channel_input_dirs(input_data_path):
-    assert environment.channel_input_dirs('evaluation') == str(input_data_path.join('evaluation'))
-    assert environment.channel_input_dirs('training') == str(input_data_path.join('training'))
+    assert environment.channel_path('evaluation') == str(input_data_path.join('evaluation'))
+    assert environment.channel_path('training') == str(input_data_path.join('training'))
 
 
 @patch('subprocess.check_output', lambda s: u('GPU 0\nGPU 1'))
-def test_num_gpu_in_gpu_instance():
-    assert environment.num_gpu() == 2
+def test_gpu_count_in_gpu_instance():
+    assert environment.gpu_count() == 2
 
 
-def test_num_gpu_in_cpu_instance():
-    assert environment.num_gpu() == 0
+def test_gpu_count_in_cpu_instance():
+    assert environment.gpu_count() == 0
 
 
 @patch('multiprocessing.cpu_count', lambda: 2)
-def test_num_cpu():
-    assert environment.num_cpu() == 2
+def test_cpu_count():
+    assert environment.cpu_count() == 2
 
 
 @patch('sagemaker_container_support.environment.read_resource_config', lambda: RESOURCE_CONFIG)
 @patch('sagemaker_container_support.environment.read_input_data_config', lambda: INPUT_DATA_CONFIG)
 @patch('sagemaker_container_support.environment.read_hyperparameters', lambda: ALL_HPS)
-@patch('sagemaker_container_support.environment.num_cpu', lambda: 8)
-@patch('sagemaker_container_support.environment.num_gpu', lambda: 4)
+@patch('sagemaker_container_support.environment.cpu_count', lambda: 8)
+@patch('sagemaker_container_support.environment.gpu_count', lambda: 4)
 def test_environment_create():
     env = environment.Environment.create(session=Mock())
 
@@ -149,8 +148,6 @@ def test_environment_create():
     assert env.channel_input_dirs['train'] == '/opt/ml/input/data/train'
     assert env.channel_input_dirs['validation'] == '/opt/ml/input/data/validation'
     assert env.current_host == RESOURCE_CONFIG['current_host']
-    assert env.num_gpu == 4
-    assert env.num_cpu == 8
     assert env.module_name == 'main.py'
     assert env.module_dir == 'imagenet'
     assert env.enable_metrics

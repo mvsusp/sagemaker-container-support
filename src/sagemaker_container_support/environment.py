@@ -18,6 +18,7 @@ import multiprocessing
 import os
 import shlex
 import subprocess
+from typing import Any, Dict, List, Tuple, Union  # noqa: F401
 
 import boto3
 
@@ -31,59 +32,57 @@ else:
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 
-BASE_PATH_ENV = 'BASE_PATH'
-CURRENT_HOST_ENV = 'CURRENT_HOST'
-JOB_NAME_ENV = 'JOB_NAME'
-USE_NGINX_ENV = 'SAGEMAKER_USE_NGINX'
+BASE_PATH_ENV = 'BASE_PATH'  # type: str
+CURRENT_HOST_ENV = 'CURRENT_HOST'  # type: str
+JOB_NAME_ENV = 'JOB_NAME'  # type: str
+USE_NGINX_ENV = 'SAGEMAKER_USE_NGINX'  # type: str
 
-BASE_PATH = os.environ.get(BASE_PATH_ENV, '/opt/ml')
+BASE_PATH = os.environ.get(BASE_PATH_ENV, os.path.join('/opt', 'ml'))  # type: str
 
-MODEL_PATH = os.path.join(BASE_PATH, 'model')
-INPUT_PATH = os.path.join(BASE_PATH, 'input')
-INPUT_DATA_PATH = os.path.join(INPUT_PATH, 'data')
-INPUT_CONFIG_PATH = os.path.join(INPUT_PATH, 'config')
-OUTPUT_PATH = os.path.join(BASE_PATH, 'output')
-OUTPUT_DATA_PATH = os.path.join(OUTPUT_PATH, 'data')
+MODEL_PATH = os.path.join(BASE_PATH, 'model')  # type: str
+INPUT_PATH = os.path.join(BASE_PATH, 'input')  # type: str
+INPUT_DATA_PATH = os.path.join(INPUT_PATH, 'data')  # type: str
+INPUT_CONFIG_PATH = os.path.join(INPUT_PATH, 'config')  # type: str
+OUTPUT_PATH = os.path.join(BASE_PATH, 'output')  # type: str
+OUTPUT_DATA_PATH = os.path.join(OUTPUT_PATH, 'data')  # type: str
 
-HYPERPARAMETERS_FILE = 'hyperparameters.json'
-RESOURCE_CONFIG_FILE = 'resourceconfig.json'
-INPUT_DATA_CONFIG_FILE = 'inputdataconfig.json'
+HYPERPARAMETERS_FILE = 'hyperparameters.json'  # type: str
+RESOURCE_CONFIG_FILE = 'resourceconfig.json'  # type: str
+INPUT_DATA_CONFIG_FILE = 'inputdataconfig.json'  # type: str
 
-PROGRAM_PARAM = 'sagemaker_program'
-SUBMIT_DIR_PARAM = 'sagemaker_submit_directory'
-ENABLE_METRICS_PARAM = 'sagemaker_enable_cloudwatch_metrics'
-LOG_LEVEL_PARAM = 'sagemaker_container_log_level'
-JOB_NAME_PARAM = 'sagemaker_job_name'
-DEFAULT_MODULE_NAME_PARAM = 'default_user_module_name'
-REGION_PARAM_NAME = 'sagemaker_region'
+PROGRAM_PARAM = 'sagemaker_program'  # type: str
+SUBMIT_DIR_PARAM = 'sagemaker_submit_directory'  # type: str
+ENABLE_METRICS_PARAM = 'sagemaker_enable_cloudwatch_metrics'  # type: str
+LOG_LEVEL_PARAM = 'sagemaker_container_log_level'  # type: str
+JOB_NAME_PARAM = 'sagemaker_job_name'  # type: str
+DEFAULT_MODULE_NAME_PARAM = 'default_user_module_name'  # type: str
+REGION_PARAM_NAME = 'sagemaker_region'  # type: str
 
 SAGEMAKER_HPS = [PROGRAM_PARAM, SUBMIT_DIR_PARAM, ENABLE_METRICS_PARAM, REGION_PARAM_NAME,
-                 LOG_LEVEL_PARAM, JOB_NAME_PARAM, DEFAULT_MODULE_NAME_PARAM]
+                 LOG_LEVEL_PARAM, JOB_NAME_PARAM, DEFAULT_MODULE_NAME_PARAM]  # type: List[str]
 
 
-def read_json(path):
+def read_json(path):  # type: (str) -> Dict[str, Any]
     """Read a JSON file.
 
     Args:
-        path (string): path to the file
+        path (str): Path to the file.
 
     Returns:
-        A Python dictionary representation of the JSON file.
+        (dict[object, object]): A dictionary representation of the JSON file.
     """
     with open(path, 'r') as f:
         return json.load(f)
 
 
-def read_hyperparameters():
+def read_hyperparameters():  # type: () -> Dict[str, object]
     """Read the hyperparameters from /opt/ml/input/config/hyperparameters.json.
-
 
     For more information about hyperparameters.json:
     https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html#your-algorithms-training-algo-running-container-hyperparameters
 
     Returns:
-         hyperparameters (dict[string, object]): a map containing the hyperparameters.
-
+         (dict[string, object]): a dictionary containing the hyperparameters.
     """
     hyperparameters = read_json(os.path.join(INPUT_CONFIG_PATH, HYPERPARAMETERS_FILE))
 
@@ -99,13 +98,15 @@ def read_hyperparameters():
         reraise(e)
 
 
-def split_hyperparameters(hyperparameters, keys=SAGEMAKER_HPS):
+def split_hyperparameters(hyperparameters,  # type: Dict[str, object]
+                          keys=SAGEMAKER_HPS  # type: List[str]
+                          ):  # type: (...) -> Tuple[Dict[str, object], Dict[str, object]]
     """Split a dictionary in two by the provided keys. The default key SAGEMAKER_HPS splits user provided
     hyperparameters from SageMaker Python SDK provided hyperparameters.
 
     Args:
-        hyperparameters: A Python dictionary
-        keys: Lists of keys which will be the split criteria
+        hyperparameters (dict[str, object]): A Python dictionary
+        keys (list[str]): Lists of keys which will be the split criteria
 
     Returns:
         criteria (dict[string, object]), not_criteria (dict[string, object]): the result of the split criteria.
@@ -115,14 +116,14 @@ def split_hyperparameters(hyperparameters, keys=SAGEMAKER_HPS):
     return {k: hyperparameters[k] for k in keys if k in hyperparameters}, {k: hyperparameters[k] for k in not_keys}
 
 
-def read_resource_config():
+def read_resource_config():  # type: () -> Dict[str, Union[str, List[str]]]
     """Read the resource configuration from /opt/ml/input/config/resourceconfig.json.
 
     For more information about resourceconfig.json:
 https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html#your-algorithms-training-algo-running-container-dist-training
 
     Returns:
-        resource_config: A dict<string, string> with the contents from /opt/ml/input/config/resourceconfig.json.
+        resource_config (dict[string, object]): the contents from /opt/ml/input/config/resourceconfig.json.
                         It has the following keys:
                             - current_host: The name of the current container on the container network.
                                 For example, 'algo-1'.
@@ -133,14 +134,14 @@ https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.ht
     return read_json(os.path.join(INPUT_CONFIG_PATH, RESOURCE_CONFIG_FILE))
 
 
-def read_input_data_config():
+def read_input_data_config():  # type: () -> Dict[str, Dict[str, str]]
     """Read the input data configuration from /opt/ml/input/config/inputdataconfig.json.
 
         For more information about inpudataconfig.json:
 https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html#your-algorithms-training-algo-running-container-dist-training
 
     Returns:
-            input_data_config: A dict<string, string> with the contents from /opt/ml/input/config/inputdataconfig.json.
+            input_data_config (dict[string, object]): contents from /opt/ml/input/config/inputdataconfig.json.
 
                                 For example, suppose that you specify three data channels (train, evaluation, and
                                 validation) in your request. This dictionary will contain:
@@ -169,7 +170,7 @@ https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.ht
     return read_json(os.path.join(INPUT_CONFIG_PATH, INPUT_DATA_CONFIG_FILE))
 
 
-def channel_input_dirs(channel):
+def channel_path(channel):  # type: (str) -> str
     """ Returns the directory containing the channel data file(s) which is:
     - <self.base_dir>/input/data/<channel>
 
@@ -181,7 +182,7 @@ def channel_input_dirs(channel):
     return os.path.join(INPUT_DATA_PATH, channel)
 
 
-def num_gpu():
+def gpu_count():  # type: () -> int
     """The number of gpus available in the current container.
 
     Returns:
@@ -196,7 +197,7 @@ def num_gpu():
         return 0
 
 
-def num_cpu():
+def cpu_count():  # type: () -> int
     """The number of cpus available in the current container.
 
     Returns:
@@ -239,18 +240,33 @@ class Environment(object):
         ```
     """
 
-    def __init__(self, input_dir, input_config_dir, model_dir, output_dir, hyperparameters, resource_config,
-                 input_data_config, output_data_dir, hosts, channel_input_dirs, current_host, num_gpu, num_cpu,
-                 module_name,
-                 module_dir, enable_metrics, log_level):
+    def __init__(self,
+                 input_dir,  # type: str
+                 input_config_dir,  # type: str
+                 model_dir,  # type: str
+                 output_dir,  # type: str
+                 hyperparameters,  # type: Dict[str, object]
+                 resource_config,  # type: Dict[str, Union[str, List[str]]]
+                 input_data_config,  # type: Dict[str, Dict[str, str]]
+                 output_data_dir,  # type: str
+                 hosts,  # type: () -> List[str]
+                 channel_input_dirs,  # type: Dict[str, str]
+                 current_host,  # type: str
+                 num_gpu,  # type: int
+                 num_cpu,  # type: int
+                 module_name,  # type: str
+                 module_dir,  # type: str
+                 enable_metrics,  # type: bool
+                 log_level  # type: int
+                 ):
         """
 
         Args:
-            input_dir: The input_dir, e.g. /opt/ml/input/, is the directory where SageMaker saves input data
+            input_dir (str): The input_dir, e.g. /opt/ml/input/, is the directory where SageMaker saves input data
                         and configuration files before and during training. The input data directory has the
                         following subdirectories: config (`input_config_dir`) and data (`input_data_dir`)
 
-            input_config_dir: The directory where standard SageMaker configuration files are located,
+            input_config_dir (str): The directory where standard SageMaker configuration files are located,
                         e.g. /opt/ml/input/config/.
 
                         SageMaker training creates the following files in this folder when training starts:
@@ -264,14 +280,15 @@ class Environment(object):
                         More information about these files can be find here:
                             https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html
 
-            model_dir:  the directory where models should be saved, e.g., /opt/ml/model/
+            model_dir (str):  the directory where models should be saved, e.g., /opt/ml/model/
 
-            output_dir: The directory where training success/failure indications will be written, e.g. /opt/ml/output.
-                        To save non-model artifacts check `output_data_dir`.
+            output_dir (str): The directory where training success/failure indications will be written, e.g.
+                        /opt/ml/output. To save non-model artifacts check `output_data_dir`.
 
-            hyperparameters: An instance of `HyperParameters` containing the training job hyperparameters.
+            hyperparameters (dict[string, object]): An instance of `HyperParameters` containing the training job
+                                                    hyperparameters.
 
-            resource_config: A dict<string, string> with the contents from /opt/ml/input/config/resourceconfig.json.
+            resource_config (dict[string, object]): the contents from /opt/ml/input/config/resourceconfig.json.
                             It has the following keys:
                                 - current_host: The name of the current container on the container network.
                                     For example, 'algo-1'.
@@ -279,7 +296,7 @@ class Environment(object):
                                     sorted lexicographically. For example, `['algo-1', 'algo-2', 'algo-3']`
                                     for a three-node cluster.
 
-            input_data_config: A dict<string, string> with the contents from /opt/ml/input/config/inputdataconfig.json.
+            input_data_config (dict[string, object]): the contents from /opt/ml/input/config/inputdataconfig.json.
 
                                 For example, suppose that you specify three data channels (train, evaluation, and
                                 validation) in your request. This dictionary will contain:
@@ -305,17 +322,17 @@ class Environment(object):
                                 You can find more information about /opt/ml/input/config/inputdataconfig.json here:
                                 https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html#your-algorithms-training-algo-running-container-inputdataconfig
 
-            output_data_dir: The dir to write non-model training artifacts (e.g. evaluation results) which will be
+            output_data_dir (str): The dir to write non-model training artifacts (e.g. evaluation results) which will be
                         retained by SageMaker, e.g. /opt/ml/output/data.
 
                         As your algorithm runs in a container, it generates output including the status of the
                         training job and model and output artifacts. Your algorithm should write this information
                         to the this directory.
 
-            hosts: The list of names of all containers on the container network, sorted lexicographically.
+            hosts (list[str]): The list of names of all containers on the container network, sorted lexicographically.
                     For example, `['algo-1', 'algo-2', 'algo-3']` for a three-node cluster.
 
-            channel_input_dirs:   A dict[string, string] containing the data channels and the directories where the
+            channel_input_dirs (dict[string, string]): containing the data channels and the directories where the
                             training data was saved.
 
                             When you run training, you can partition your training data into different logical
@@ -324,39 +341,233 @@ class Environment(object):
 
                             The format of channel_input_dir is as follows:
 
-                                - `channel`[key] - the name of the channel defined in the input_data_config.
-                                - `training data path`[value] - the path to the directory where the training data is
+                                - `channel`(str) - the name of the channel defined in the input_data_config.
+                                - `training data path`(str) - the path to the directory where the training data is
                                 saved.
 
-            current_host: The name of the current container on the container network. For example, 'algo-1'.
+            current_host (str): The name of the current container on the container network. For example, 'algo-1'.
 
-            num_gpu: The number of gpus available in the current container.
+            num_gpu (int): The number of gpus available in the current container.
 
-            num_cpu: The number of cpus available in the current container.
+            num_cpu (int): The number of cpus available in the current container.
 
         Returns:
-            A `TrainerEnvironment` object.
+            A `Environment` object.
         """
-        self.input_dir = input_dir
-        self.input_config_dir = input_config_dir
-        self.model_dir = model_dir
-        self.output_dir = output_dir
-        self.hyperparameters = hyperparameters
-        self.resource_config = resource_config
-        self.input_data_config = input_data_config
-        self.output_data_dir = output_data_dir
-        self.hosts = hosts
-        self.channel_input_dirs = channel_input_dirs
-        self.current_host = current_host
-        self.num_gpu = num_gpu
-        self.num_cpu = num_cpu
-        self.module_name = module_name
-        self.module_dir = module_dir
-        self.enable_metrics = enable_metrics
-        self.log_level = log_level
+        self._input_dir = input_dir
+        self._input_config_dir = input_config_dir
+        self._model_dir = model_dir
+        self._output_dir = output_dir
+        self._hyperparameters = hyperparameters
+        self._resource_config = resource_config
+        self._input_data_config = input_data_config
+        self._output_data_dir = output_data_dir
+        self._hosts = hosts
+        self._channel_input_dirs = channel_input_dirs
+        self._current_host = current_host
+        self._num_gpu = num_gpu
+        self._num_cpu = num_cpu
+        self._module_name = module_name
+        self._module_dir = module_dir
+        self._enable_metrics = enable_metrics
+        self._log_level = log_level
+
+    @property
+    def input_dir(self):  # type: () -> str
+        """The input_dir, e.g. /opt/ml/input/, is the directory where SageMaker saves input data
+        and configuration files before and during training.
+        The input data directory has the following subdirectories:
+            config (`input_config_dir`) and data (`input_data_dir`)
+        Returns:
+            (str): the path of the input directory, e.g. /opt/ml/input/
+        """
+        return self._input_dir
+
+    @property
+    def input_config_dir(self):  # type: () -> str
+        """The directory where standard SageMaker configuration files are located, e.g. /opt/ml/input/config/.
+        SageMaker training creates the following files in this folder when training starts:
+            - `hyperparameters.json`: Amazon SageMaker makes the hyperparameters in a CreateTrainingJob
+                request available in this file.
+            - `inputdataconfig.json`: You specify data channel information in the InputDataConfig parameter
+                in a CreateTrainingJob request. Amazon SageMaker makes this information available
+                in this file.
+            - `resourceconfig.json`: name of the current host and all host containers in the training
+        More information about this files can be find here:
+            https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html
+        Returns:
+            (str): the path of the input directory, e.g. /opt/ml/input/config/
+        """
+        return self._input_config_dir
+
+    @property
+    def model_dir(self):  # type: () -> str
+        """Returns:
+            (str): the directory where models should be saved, e.g., /opt/ml/model/"""
+        return self._model_dir
+
+    @property
+    def output_dir(self):  # type: () -> str
+        """The directory where training success/failure indications will be written, e.g. /opt/ml/output.
+        To save non-model artifacts check `output_data_dir`.
+        Returns:
+            (str): the path to the output directory, e.g. /opt/ml/output/.
+        """
+        return self._output_dir
+
+    @property
+    def hyperparameters(self):  # type: () -> Dict[str, object]
+        """The dict of hyperparameters that were passed to the training job.
+
+        Returns:
+            hyperparameters (dict[str, object]): An instance of `HyperParameters` containing the training job
+                                                    hyperparameters.
+        """
+        return self._hyperparameters
+
+    @property
+    def resource_config(self):  # type: () -> Dict[str, Union[str, List[str]]]
+        """A dictionary with the contents from /opt/ml/input/config/resourceconfig.json.
+                It has the following keys:
+                    - current_host: The name of the current container on the container network.
+                        For example, 'algo-1'.
+                    -  hosts: The list of names of all containers on the container network, sorted lexicographically.
+                        For example, `["algo-1", "algo-2", "algo-3"]` for a three-node cluster.
+                Returns:
+                    dict[str, str or list(str)]
+        """
+        return self._resource_config
+
+    @property
+    def input_data_config(self):  # type: () -> Dict[str, Dict[str, str]]
+        """A dictionary with the contents from /opt/ml/input/config/inputdataconfig.json.
+                For example, suppose that you specify three data channels (train, evaluation, and validation) in
+                your request. This dictionary will contain:
+                ```{"train": {
+                        "ContentType":  "trainingContentType",
+                        "TrainingInputMode": "File",
+                        "S3DistributionType": "FullyReplicated",
+                        "RecordWrapperType": "None"
+                    },
+                    "evaluation" : {
+                        "ContentType": "evalContentType",
+                        "TrainingInputMode": "File",
+                        "S3DistributionType": "FullyReplicated",
+                        "RecordWrapperType": "None"
+                    },
+                    "validation": {
+                        "TrainingInputMode": "File",
+                        "S3DistributionType": "FullyReplicated",
+                        "RecordWrapperType": "None"
+                    }
+                 } ```
+                You can find more information about /opt/ml/input/config/inputdataconfig.json here:
+                    https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html#your-algorithms-training-algo-running-container-inputdataconfig
+                Returns:
+                    dict[str, dict[str, str]]
+        """
+        return self._input_data_config
+
+    @property
+    def output_data_dir(self):  # type: () -> str
+        """The dir to write non-model training artifacts (e.g. evaluation results) which will be retained
+        by SageMaker, e.g. /opt/ml/output/data.
+        As your algorithm runs in a container, it generates output including the status of the
+        training job and model and output artifacts. Your algorithm should write this information
+        to the this directory.
+        Returns:
+            (str): the path to output data directory, e.g. /opt/ml/output/data.
+        """
+        return self._output_data_dir
+
+    @property
+    def hosts(self):  # type: () -> List[str]
+        """The list of names of all containers on the container network, sorted lexicographically.
+                For example, `["algo-1", "algo-2", "algo-3"]` for a three-node cluster.
+        Returns:
+              list[str]: all the hosts in the training network.
+        """
+        return self._hosts
+
+    @property
+    def channel_input_dirs(self):  # type: () -> Dict[str, str]
+        """A dict[str, str] containing the data channels and the directories where the training
+        data was saved.
+        When you run training, you can partition your training data into different logical "channels".
+        Depending on your problem, some common channel ideas are: "train", "test", "evaluation"
+            or "images',"labels".
+        The format of channel_input_dir is as follows:
+            - `channel`[key](str) - the name of the channel defined in the input_data_config.
+            - `training data path`[value](str) - the path to the directory where the training data is saved.
+        Returns:
+            dict[str, str] with the information about the channels.
+        """
+        return self._channel_input_dirs
+
+    @property
+    def current_host(self):  # type: () -> str
+        """The name of the current container on the container network. For example, 'algo-1'.
+        Returns:
+            (str): current host.
+        """
+        return self._current_host
+
+    @property
+    def num_gpu(self):  # type: () -> int
+        """The number of gpus available in the current container.
+
+        Returns:
+            (int): number of gpus available in the current container.
+        """
+        return self._num_gpu
+
+    @property
+    def num_cpu(self):  # type: () -> int
+        """The number of cpus available in the current container.
+
+        Returns:
+            (int): number of cpus available in the current container.
+        """
+        return self._num_cpu
+
+    @property
+    def module_name(self):  # type: () -> str
+        """The name of the user provided module.
+
+        Returns:
+            (str): name of the user provided module
+        """
+        return self._module_name
+
+    @property
+    def module_dir(self):  # type: () -> str
+        """The full path location of the user provided module.
+
+        Returns:
+            (str): full path location of the user provided module.
+        """
+        return self._module_dir
+
+    @property
+    def enable_metrics(self):  # type: () -> bool
+        """Whether metrics should be executed in the environment or not.
+
+        Returns:
+            (bool): representing whether metrics should be execute or not.
+        """
+        return self._enable_metrics
+
+    @property
+    def log_level(self):  # type: () -> int
+        """Environment logging level.
+
+        Returns:
+            (int): environment logging level.
+        """
+        return self._log_level
 
     @classmethod
-    def create(cls, session=None):
+    def create(cls, session=None):  # type: (boto3.Session) -> Environment
         """
         Returns: an instance of `Environment`
         """
@@ -383,14 +594,14 @@ class Environment(object):
                    output_data_dir=OUTPUT_DATA_PATH,
                    current_host=current_host,
                    hosts=hosts,
-                   channel_input_dirs={channel: channel_input_dirs(channel) for channel in input_data_config},
-                   num_gpu=num_gpu(),
-                   num_cpu=num_cpu(),
+                   channel_input_dirs={channel: channel_path(channel) for channel in input_data_config},
+                   num_gpu=gpu_count(),
+                   num_cpu=cpu_count(),
                    hyperparameters=hyperparameters,
                    resource_config=resource_config,
                    input_data_config=read_input_data_config(),
-                   module_name=sagemaker_hyperparameters.get(PROGRAM_PARAM),
-                   module_dir=sagemaker_hyperparameters.get(SUBMIT_DIR_PARAM),
+                   module_name=str(sagemaker_hyperparameters.get(PROGRAM_PARAM)),
+                   module_dir=str(sagemaker_hyperparameters.get(SUBMIT_DIR_PARAM)),
                    enable_metrics=sagemaker_hyperparameters.get(ENABLE_METRICS_PARAM, False),
                    log_level=sagemaker_hyperparameters.get(LOG_LEVEL_PARAM, logging.INFO)
                    )
