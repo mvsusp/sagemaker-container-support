@@ -58,8 +58,8 @@ JOB_NAME_PARAM = 'sagemaker_job_name'  # type: str
 DEFAULT_MODULE_NAME_PARAM = 'default_user_module_name'  # type: str
 REGION_PARAM_NAME = 'sagemaker_region'  # type: str
 
-SAGEMAKER_HPS = [PROGRAM_PARAM, SUBMIT_DIR_PARAM, ENABLE_METRICS_PARAM, REGION_PARAM_NAME,
-                 LOG_LEVEL_PARAM, JOB_NAME_PARAM, DEFAULT_MODULE_NAME_PARAM]  # type: List[str]
+SAGEMAKER_HYPERPARAMETERS = [PROGRAM_PARAM, SUBMIT_DIR_PARAM, ENABLE_METRICS_PARAM, REGION_PARAM_NAME,
+                             LOG_LEVEL_PARAM, JOB_NAME_PARAM, DEFAULT_MODULE_NAME_PARAM]  # type: List[str]
 
 
 def read_json(path):  # type: (str) -> Dict[str, Any]
@@ -99,7 +99,7 @@ def read_hyperparameters():  # type: () -> Dict[str, object]
 
 
 def split_hyperparameters(hyperparameters,  # type: Dict[str, object]
-                          keys=SAGEMAKER_HPS  # type: List[str]
+                          keys=SAGEMAKER_HYPERPARAMETERS  # type: List[str]
                           ):  # type: (...) -> Tuple[Dict[str, object], Dict[str, object]]
     """Split a dictionary in two by the provided keys. The default key SAGEMAKER_HPS splits user provided
     hyperparameters from SageMaker Python SDK provided hyperparameters.
@@ -350,9 +350,6 @@ class Environment(object):
             num_gpu (int): The number of gpus available in the current container.
 
             num_cpu (int): The number of cpus available in the current container.
-
-        Returns:
-            A `Environment` object.
         """
         self._input_dir = input_dir
         self._input_config_dir = input_config_dir
