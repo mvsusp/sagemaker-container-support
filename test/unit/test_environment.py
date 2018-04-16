@@ -6,7 +6,7 @@ from mock import Mock, patch
 
 import pytest
 
-from six import u
+from six import b
 from six.moves import reload_module
 
 import sagemaker_container_support.environment as environment
@@ -112,7 +112,7 @@ def test_channel_input_dirs(input_data_path):
     assert environment.channel_path('training') == str(input_data_path.join('training'))
 
 
-@patch('subprocess.check_output', lambda s: u('GPU 0\nGPU 1'))
+@patch('subprocess.check_output', lambda s: b('GPU 0\nGPU 1'))
 def test_gpu_count_in_gpu_instance():
     assert environment.gpu_count() == 2
 
