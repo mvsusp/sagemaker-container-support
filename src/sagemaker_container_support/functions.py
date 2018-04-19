@@ -12,7 +12,15 @@
 # language governing permissions and limitations under the License.
 from __future__ import absolute_import
 
-from sagemaker_container_support.environment import Environment
-import sagemaker_container_support.functions
 
-__all__ = [Environment]
+class ClientException(object, Exception):
+    pass
+
+
+def call(fn_name, user_module, framework, **kwargs):
+    try:
+        return getattr(user_module, fn_name)(**kwargs)
+    except AttributeError:
+        return getattr(framework, fn_name)(**kwargs)
+    except Exception as e:
+        raise ClientException(e)

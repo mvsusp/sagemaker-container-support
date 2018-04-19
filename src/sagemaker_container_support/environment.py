@@ -36,6 +36,8 @@ BASE_PATH_ENV = 'BASE_PATH'  # type: str
 CURRENT_HOST_ENV = 'CURRENT_HOST'  # type: str
 JOB_NAME_ENV = 'JOB_NAME'  # type: str
 USE_NGINX_ENV = 'SAGEMAKER_USE_NGINX'  # type: str
+MODEL_SERVER_WORKERS_PARAM = 'SAGEMAKER_MODEL_SERVER_WORKERS'
+MODEL_SERVER_TIMEOUT_PARAM = "SAGEMAKER_MODEL_SERVER_TIMEOUT"
 
 BASE_PATH = os.environ.get(BASE_PATH_ENV, os.path.join('/opt', 'ml'))  # type: str
 
@@ -204,6 +206,20 @@ def cpu_count():  # type: () -> int
         (int): number of cpus available in the current container.
     """
     return multiprocessing.cpu_count()
+
+
+@property
+def model_server_timeout():
+    return os.environ.get(MODEL_SERVER_TIMEOUT_PARAM, 60)
+
+
+@property
+def use_nginx():
+    return os.environ.get(USE_NGINX_ENV, 'true') == 'true'
+
+
+def get_model_server_workers():
+    return int(os.environ.get(MODEL_SERVER_WORKERS_PARAM, cpu_count()))
 
 
 class Environment(object):
