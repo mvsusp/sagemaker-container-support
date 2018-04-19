@@ -2,8 +2,10 @@ import json
 import logging
 from itertools import chain
 
-import pytest
 from mock import Mock, patch
+
+import pytest
+
 from six import b
 from six.moves import reload_module
 
