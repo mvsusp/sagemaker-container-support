@@ -2,10 +2,8 @@ import json
 import logging
 from itertools import chain
 
-from mock import Mock, patch
-
 import pytest
-
+from mock import Mock, patch
 from six import b
 from six.moves import reload_module
 
@@ -60,9 +58,10 @@ def override_input_data_path(input_path):
 
 
 def test_read_json(tmpdir):
-    file_path = write_json('hyperparameters.json', ALL_HPS, tmpdir)
+    path_obj = tmpdir.join('hyperparameters.json')
+    json_dump(ALL_HPS, tmpdir.join('hyperparameters.json'))
 
-    assert environment.read_json(file_path) == ALL_HPS
+    assert environment.read_json(str(path_obj)) == ALL_HPS
 
 
 def test_read_json_throws_exception():
@@ -71,14 +70,14 @@ def test_read_json_throws_exception():
 
 
 def test_read_hyperparameters(input_config_path):
-    write_json('hyperparameters.json', ALL_HPS, input_config_path)
+    json_dump(ALL_HPS, input_config_path.join('hyperparameters.json'))
 
     assert environment.read_hyperparameters() == ALL_HPS
 
 
 def test_read_key_serialized_hyperparameters(input_config_path):
     key_serialized_hps = {k: json.dumps(v) for k, v in ALL_HPS.items()}
-    write_json('hyperparameters.json', key_serialized_hps, input_config_path)
+    json_dump(key_serialized_hps, input_config_path.join('hyperparameters.json'))
 
     assert environment.read_hyperparameters() == ALL_HPS
 
@@ -96,13 +95,13 @@ def test_split_hyperparameters():
 
 
 def test_resource_config(input_config_path):
-    write_json('resourceconfig.json', RESOURCE_CONFIG, input_config_path)
+    json_dump(RESOURCE_CONFIG, input_config_path.join('resourceconfig.json'))
 
     assert environment.read_resource_config() == RESOURCE_CONFIG
 
 
 def test_input_data_config(input_config_path):
-    write_json('inputdataconfig.json', INPUT_DATA_CONFIG, input_config_path)
+    json_dump(INPUT_DATA_CONFIG, input_config_path.join('inputdataconfig.json'))
 
     assert environment.read_input_data_config() == INPUT_DATA_CONFIG
 
@@ -117,6 +116,7 @@ def test_gpu_count_in_gpu_instance():
     assert environment.gpu_count() == 2
 
 
+@patch('multiprocessing.cpu_count', lambda: OSError())
 def test_gpu_count_in_cpu_instance():
     assert environment.gpu_count() == 0
 
@@ -154,7 +154,11 @@ def test_environment_create():
     assert env.log_level == logging.WARNING
 
 
-def write_json(name, data, file_path):
-    file_path = file_path.join(name)
-    file_path.write(json.dumps(data))
-    return str(file_path)
+def json_dump(data, path_obj):  # type: (object, py.path.local) -> None
+    """Writes JSON serialized data to the local file system path
+
+    Args:
+        data (object): object to be serialized
+        path_obj (py.path.local): path.local object of the file to be written
+    """
+    path_obj.write(json.dumps(data))

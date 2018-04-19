@@ -18,7 +18,6 @@ import multiprocessing
 import os
 import shlex
 import subprocess
-from typing import Any, Dict, List, Tuple, Union  # noqa: F401
 
 import boto3
 
@@ -29,7 +28,7 @@ if PY2:
 else:
     from json.decoder import JSONDecodeError
 
-logging.basicConfig()
+# TODO (mvsusp): tests for how other apps will set different logger levels
 logger = logging.getLogger(__name__)
 
 BASE_PATH_ENV = 'BASE_PATH'  # type: str
@@ -58,11 +57,11 @@ JOB_NAME_PARAM = 'sagemaker_job_name'  # type: str
 DEFAULT_MODULE_NAME_PARAM = 'default_user_module_name'  # type: str
 REGION_PARAM_NAME = 'sagemaker_region'  # type: str
 
-SAGEMAKER_HYPERPARAMETERS = [PROGRAM_PARAM, SUBMIT_DIR_PARAM, ENABLE_METRICS_PARAM, REGION_PARAM_NAME,
-                             LOG_LEVEL_PARAM, JOB_NAME_PARAM, DEFAULT_MODULE_NAME_PARAM]  # type: List[str]
+SAGEMAKER_HYPERPARAMETERS = (PROGRAM_PARAM, SUBMIT_DIR_PARAM, ENABLE_METRICS_PARAM, REGION_PARAM_NAME,
+                             LOG_LEVEL_PARAM, JOB_NAME_PARAM, DEFAULT_MODULE_NAME_PARAM)  # type: set
 
 
-def read_json(path):  # type: (str) -> Dict[str, Any]
+def read_json(path):  # type: (str) -> dict
     """Read a JSON file.
 
     Args:
@@ -75,7 +74,7 @@ def read_json(path):  # type: (str) -> Dict[str, Any]
         return json.load(f)
 
 
-def read_hyperparameters():  # type: () -> Dict[str, object]
+def read_hyperparameters():  # type: () -> dict
     """Read the hyperparameters from /opt/ml/input/config/hyperparameters.json.
 
     For more information about hyperparameters.json:
@@ -89,6 +88,7 @@ def read_hyperparameters():  # type: () -> Dict[str, object]
     try:
         return {k: json.loads(v) for k, v in hyperparameters.items()}
     except (JSONDecodeError, TypeError):
+        logger.warning("Failed to parse hyperparameters' values to Json. Returning the hyperparameters instead:")
         return hyperparameters
     except ValueError as e:
         if str(e) == 'No JSON object could be decoded':
@@ -98,25 +98,26 @@ def read_hyperparameters():  # type: () -> Dict[str, object]
         reraise(e)
 
 
-def split_hyperparameters(hyperparameters,  # type: Dict[str, object]
-                          keys=SAGEMAKER_HYPERPARAMETERS  # type: List[str]
-                          ):  # type: (...) -> Tuple[Dict[str, object], Dict[str, object]]
+def split_hyperparameters(hyperparameters,  # type: dict
+                          keys=SAGEMAKER_HYPERPARAMETERS  # type: set
+                          ):  # type: (...) -> (dict, dict)
     """Split a dictionary in two by the provided keys. The default key SAGEMAKER_HPS splits user provided
     hyperparameters from SageMaker Python SDK provided hyperparameters.
 
     Args:
         hyperparameters (dict[str, object]): A Python dictionary
-        keys (list[str]): Lists of keys which will be the split criteria
+        keys (set[str]): Lists of keys which will be the split criteria
 
     Returns:
         criteria (dict[string, object]), not_criteria (dict[string, object]): the result of the split criteria.
     """
-    not_keys = set(hyperparameters.keys()) - set(keys)
+    dict_matching_criteria = {k: hyperparameters[k] for k in hyperparameters.keys() if k in keys}
+    dict_not_matching_criteria = {k: hyperparameters[k] for k in hyperparameters.keys() if k not in keys}
 
-    return {k: hyperparameters[k] for k in keys if k in hyperparameters}, {k: hyperparameters[k] for k in not_keys}
+    return dict_matching_criteria, dict_not_matching_criteria
 
 
-def read_resource_config():  # type: () -> Dict[str, Union[str, List[str]]]
+def read_resource_config():  # type: () -> dict
     """Read the resource configuration from /opt/ml/input/config/resourceconfig.json.
 
     For more information about resourceconfig.json:
@@ -134,38 +135,35 @@ https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.ht
     return read_json(os.path.join(INPUT_CONFIG_PATH, RESOURCE_CONFIG_FILE))
 
 
-def read_input_data_config():  # type: () -> Dict[str, Dict[str, str]]
+def read_input_data_config():  # type: () -> dict
     """Read the input data configuration from /opt/ml/input/config/inputdataconfig.json.
+
+        For example, suppose that you specify three data channels (train, evaluation, and
+        validation) in your request. This dictionary will contain:
+
+        {'train': {
+            'ContentType':  'trainingContentType',
+            'TrainingInputMode': 'File',
+            'S3DistributionType': 'FullyReplicated',
+            'RecordWrapperType': 'None'
+        },
+        'evaluation' : {
+            'ContentType': 'evalContentType',
+            'TrainingInputMode': 'File',
+            'S3DistributionType': 'FullyReplicated',
+            'RecordWrapperType': 'None'
+        },
+        'validation': {
+            'TrainingInputMode': 'File',
+            'S3DistributionType': 'FullyReplicated',
+            'RecordWrapperType': 'None'
+        }}
 
         For more information about inpudataconfig.json:
 https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html#your-algorithms-training-algo-running-container-dist-training
 
     Returns:
             input_data_config (dict[string, object]): contents from /opt/ml/input/config/inputdataconfig.json.
-
-                                For example, suppose that you specify three data channels (train, evaluation, and
-                                validation) in your request. This dictionary will contain:
-
-                                {'train': {
-                                    'ContentType':  'trainingContentType',
-                                    'TrainingInputMode': 'File',
-                                    'S3DistributionType': 'FullyReplicated',
-                                    'RecordWrapperType': 'None'
-                                },
-                                'evaluation' : {
-                                    'ContentType': 'evalContentType',
-                                    'TrainingInputMode': 'File',
-                                    'S3DistributionType': 'FullyReplicated',
-                                    'RecordWrapperType': 'None'
-                                },
-                                'validation': {
-                                    'TrainingInputMode': 'File',
-                                    'S3DistributionType': 'FullyReplicated',
-                                    'RecordWrapperType': 'None'
-                                }}
-
-                                You can find more information about /opt/ml/input/config/inputdataconfig.json here:
-                                https://docs.aws.amazon.com/sagemaker/latest/dg/your-algorithms-training-algo.html#your-algorithms-training-algo-running-container-inputdataconfig
     """
     return read_json(os.path.join(INPUT_CONFIG_PATH, INPUT_DATA_CONFIG_FILE))
 
@@ -230,9 +228,7 @@ class Environment(object):
 
         >>>model = ResNet50(weights='imagenet')
 
-        unfreeze the model to allow fine tuning
         ...
-
         >>>model.fit(x_train, y_train)
 
         save the model in the end of training
@@ -245,12 +241,12 @@ class Environment(object):
                  input_config_dir,  # type: str
                  model_dir,  # type: str
                  output_dir,  # type: str
-                 hyperparameters,  # type: Dict[str, object]
-                 resource_config,  # type: Dict[str, Union[str, List[str]]]
-                 input_data_config,  # type: Dict[str, Dict[str, str]]
+                 hyperparameters,  # type: dict
+                 resource_config,  # type: dict
+                 input_data_config,  # type: dict
                  output_data_dir,  # type: str
-                 hosts,  # type: () -> List[str]
-                 channel_input_dirs,  # type: Dict[str, str]
+                 hosts,  # type: () -> list
+                 channel_input_dirs,  # type: dict
                  current_host,  # type: str
                  num_gpu,  # type: int
                  num_cpu,  # type: int
@@ -413,7 +409,7 @@ class Environment(object):
         return self._output_dir
 
     @property
-    def hyperparameters(self):  # type: () -> Dict[str, object]
+    def hyperparameters(self):  # type: () -> dict
         """The dict of hyperparameters that were passed to the training job.
 
         Returns:
@@ -423,7 +419,7 @@ class Environment(object):
         return self._hyperparameters
 
     @property
-    def resource_config(self):  # type: () -> Dict[str, Union[str, List[str]]]
+    def resource_config(self):  # type: () -> dict
         """A dictionary with the contents from /opt/ml/input/config/resourceconfig.json.
                 It has the following keys:
                     - current_host: The name of the current container on the container network.
@@ -436,7 +432,7 @@ class Environment(object):
         return self._resource_config
 
     @property
-    def input_data_config(self):  # type: () -> Dict[str, Dict[str, str]]
+    def input_data_config(self):  # type: () -> dict
         """A dictionary with the contents from /opt/ml/input/config/inputdataconfig.json.
                 For example, suppose that you specify three data channels (train, evaluation, and validation) in
                 your request. This dictionary will contain:
@@ -478,7 +474,7 @@ class Environment(object):
         return self._output_data_dir
 
     @property
-    def hosts(self):  # type: () -> List[str]
+    def hosts(self):  # type: () -> list
         """The list of names of all containers on the container network, sorted lexicographically.
                 For example, `["algo-1", "algo-2", "algo-3"]` for a three-node cluster.
         Returns:
@@ -487,7 +483,7 @@ class Environment(object):
         return self._hosts
 
     @property
-    def channel_input_dirs(self):  # type: () -> Dict[str, str]
+    def channel_input_dirs(self):  # type: () -> dict
         """A dict[str, str] containing the data channels and the directories where the training
         data was saved.
         When you run training, you can partition your training data into different logical "channels".
@@ -568,7 +564,7 @@ class Environment(object):
         """
         Returns: an instance of `Environment`
         """
-        session = session if session else boto3.Session()
+        session = session or boto3.Session()
 
         resource_config = read_resource_config()
         current_host = resource_config['current_host']
