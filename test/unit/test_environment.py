@@ -24,13 +24,13 @@ INPUT_DATA_CONFIG = {
         'RecordWrapperType': 'None'
     }}
 
-USER_HPS = dict(batch_size=32, learning_rate=.001)
-SAGEMAKER_HPS = {'sagemaker_region': 'us-west-2', 'default_user_module_name': 'net',
-                 'sagemaker_job_name': 'sagemaker-training-job', 'sagemaker_program': 'main.py',
-                 'sagemaker_submit_directory': 'imagenet', 'sagemaker_enable_cloudwatch_metrics': True,
-                 'sagemaker_container_log_level': logging.WARNING}
+USER_HYPERPARAMETERS = dict(batch_size=32, learning_rate=.001)
+SAGEMAKER_HYPERPARAMETERS = {'sagemaker_region': 'us-west-2', 'default_user_module_name': 'net',
+                             'sagemaker_job_name': 'sagemaker-training-job', 'sagemaker_program': 'main.py',
+                             'sagemaker_submit_directory': 'imagenet', 'sagemaker_enable_cloudwatch_metrics': True,
+                             'sagemaker_container_log_level': logging.WARNING}
 
-ALL_HPS = dict(chain(USER_HPS.items(), SAGEMAKER_HPS.items()))
+ALL_HYPERPARAMETERS = dict(chain(USER_HYPERPARAMETERS.items(), SAGEMAKER_HYPERPARAMETERS.items()))
 
 
 @pytest.fixture(name='opt_ml_path')
@@ -59,9 +59,9 @@ def override_input_data_path(input_path):
 
 def test_read_json(tmpdir):
     path_obj = tmpdir.join('hyperparameters.json')
-    json_dump(ALL_HPS, tmpdir.join('hyperparameters.json'))
+    json_dump(ALL_HYPERPARAMETERS, tmpdir.join('hyperparameters.json'))
 
-    assert environment.read_json(str(path_obj)) == ALL_HPS
+    assert environment.read_json(str(path_obj)) == ALL_HYPERPARAMETERS
 
 
 def test_read_json_throws_exception():
@@ -70,28 +70,28 @@ def test_read_json_throws_exception():
 
 
 def test_read_hyperparameters(input_config_path):
-    json_dump(ALL_HPS, input_config_path.join('hyperparameters.json'))
+    json_dump(ALL_HYPERPARAMETERS, input_config_path.join('hyperparameters.json'))
 
-    assert environment.read_hyperparameters() == ALL_HPS
+    assert environment.read_hyperparameters() == ALL_HYPERPARAMETERS
 
 
 def test_read_key_serialized_hyperparameters(input_config_path):
-    key_serialized_hps = {k: json.dumps(v) for k, v in ALL_HPS.items()}
+    key_serialized_hps = {k: json.dumps(v) for k, v in ALL_HYPERPARAMETERS.items()}
     json_dump(key_serialized_hps, input_config_path.join('hyperparameters.json'))
 
-    assert environment.read_hyperparameters() == ALL_HPS
+    assert environment.read_hyperparameters() == ALL_HYPERPARAMETERS
 
 
 def test_split_hyperparameters_only_provided_by_user():
-    assert environment.split_hyperparameters(USER_HPS) == ({}, USER_HPS)
+    assert environment.split_hyperparameters(USER_HYPERPARAMETERS) == ({}, USER_HYPERPARAMETERS)
 
 
 def test_split_hyperparameters_only_provided_by_sagemaker():
-    assert environment.split_hyperparameters(SAGEMAKER_HPS) == (SAGEMAKER_HPS, {})
+    assert environment.split_hyperparameters(SAGEMAKER_HYPERPARAMETERS) == (SAGEMAKER_HYPERPARAMETERS, {})
 
 
 def test_split_hyperparameters():
-    assert environment.split_hyperparameters(ALL_HPS) == (SAGEMAKER_HPS, USER_HPS)
+    assert environment.split_hyperparameters(ALL_HYPERPARAMETERS) == (SAGEMAKER_HYPERPARAMETERS, USER_HYPERPARAMETERS)
 
 
 def test_resource_config(input_config_path):
@@ -128,7 +128,7 @@ def test_cpu_count():
 
 @patch('sagemaker_container_support.environment.read_resource_config', lambda: RESOURCE_CONFIG)
 @patch('sagemaker_container_support.environment.read_input_data_config', lambda: INPUT_DATA_CONFIG)
-@patch('sagemaker_container_support.environment.read_hyperparameters', lambda: ALL_HPS)
+@patch('sagemaker_container_support.environment.read_hyperparameters', lambda: ALL_HYPERPARAMETERS)
 @patch('sagemaker_container_support.environment.cpu_count', lambda: 8)
 @patch('sagemaker_container_support.environment.gpu_count', lambda: 4)
 def test_environment_create():
@@ -140,7 +140,7 @@ def test_environment_create():
     assert env.input_config_dir == '/opt/ml/input/config'
     assert env.model_dir == '/opt/ml/model'
     assert env.output_dir == '/opt/ml/output'
-    assert env.hyperparameters == USER_HPS
+    assert env.hyperparameters == USER_HYPERPARAMETERS
     assert env.resource_config == RESOURCE_CONFIG
     assert env.input_data_config == INPUT_DATA_CONFIG
     assert env.output_data_dir == '/opt/ml/output/data'

@@ -101,7 +101,7 @@ def read_hyperparameters():  # type: () -> dict
 def split_hyperparameters(hyperparameters,  # type: dict
                           keys=SAGEMAKER_HYPERPARAMETERS  # type: set
                           ):  # type: (...) -> (dict, dict)
-    """Split a dictionary in two by the provided keys. The default key SAGEMAKER_HPS splits user provided
+    """Split a dictionary in two by the provided keys. The default key SAGEMAKER_HYPERPARAMETERS splits user provided
     hyperparameters from SageMaker Python SDK provided hyperparameters.
 
     Args:
