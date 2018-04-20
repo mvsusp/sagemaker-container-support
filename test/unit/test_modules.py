@@ -12,14 +12,19 @@
 # language governing permissions and limitations under the License.
 from __future__ import absolute_import
 
-from mock import call, patch, mock_open
+import os
+import subprocess
+import sys
 
-import pip
+from mock import call, mock_open, patch
 
 import pytest
+
 from six import PY2
 
 from sagemaker_containers import modules
+
+builtins_open = '__builtin__.open' if PY2 else 'builtins.open'
 
 
 @patch('boto3.resource', autospec=True)
@@ -34,65 +39,89 @@ def test_download(resource, url, bucket_name, key, dst):
     assert resource.mock_calls == chain.call_list()
 
 
+@patch(builtins_open, mock_open())
+@patch('os.path.exists', lambda x: False)
+def test_prepare():
+    modules.prepare('c:/path/to/', 'my-module')
+    open.assert_called_with('c:/path/to/setup.py', 'w')
+
+    content = os.linesep.join(['from distutils.core import setup',
+                               'setup(name="my-module", py_modules=["my-module"])'])
+
+    open().write.assert_called_with(content)
+
+
+@patch(builtins_open, mock_open())
+@patch('os.path.exists', lambda x: True)
+def test_prepare_already_prepared():
+    modules.prepare('c:/path/to/', 'my-module')
+    open.assert_not_called()
+
+
 def test_download_wrong_scheme():
     with pytest.raises(ValueError, message="Expecting 's3' scheme, got: c in c://my-bucket/my-file"):
         modules.download('c://my-bucket/my-file', '/tmp/file')
 
 
-@patch('pip.main', autospec=True)
-def test_install(main):
-    main.return_value = pip.status_codes.SUCCESS
+@patch('subprocess.check_call', autospec=True)
+def test_install(check_call):
     modules.install('c://sagemaker-pytorch-container')
 
-    main.assert_called_with(['install', 'c://sagemaker-pytorch-container'])
+    check_call.assert_called_with([sys.executable, '-m', 'pip', 'install', 'c://sagemaker-pytorch-container', '-U'])
 
 
-@patch('pip.main', lambda args: pip.status_codes.ERROR)
-def test_install_fails():
-    with pytest.raises(ValueError, message='Failed to install module git://aws/container-support with status code 1'):
+@patch('subprocess.check_call')
+def test_install_fails(check_call):
+    check_call.side_effect = subprocess.CalledProcessError(1, 'returned non-zero exit status 1')
+    with pytest.raises(ValueError) as e:
         modules.install('git://aws/container-support')
-
-
-builtins_open = '__builtin__.open' if PY2 else 'builtins.open'
+    assert str(e.value).startswith('Failed to pip install git://aws/container-support:')
 
 
 @patch('importlib.import_module')
+@patch('sagemaker_containers.modules.prepare')
 @patch('sagemaker_containers.modules.install')
 @patch('sagemaker_containers.modules.download')
-@patch('tempfile.mkstemp')
+@patch('tempfile.NamedTemporaryFile')
+@patch('tempfile.mkdtemp', lambda: '/tmp')
+@patch('shutil.rmtree')
 @patch(builtins_open, mock_open())
 @patch('tarfile.open')
-def test_download_and_import_default_name(tar_open, mkstemp, download, install, import_module):
-    mkstemp.side_effect = ['/tmp-1', '/tmp-2']
-
+def test_download_and_import_default_name(tar_open, rm_tree, named_temporary_file, download, install, prepare,
+                                          import_module):
     module = modules.download_and_import('s3://bucket/my-module')
 
-    open_call = open(download('s3://bucket/my-module', '/tmp-1'), 'rb')
+    download.assert_called_with('s3://bucket/my-module', named_temporary_file().__enter__().name)
 
-    with tar_open(fileobj=open_call, mode='r:gz') as t:
-        t.extractall.assert_called_with(path='/tmp-2')
+    tar_open().__enter__().extractall.assert_called_with(path='/tmp')
 
-    install.assert_called_with('/tmp-2')
+    prepare.assert_called_with('/tmp', modules.DEFAULT_MODULE_NAME)
+    install.assert_called_with('/tmp')
 
     assert module == import_module(modules.DEFAULT_MODULE_NAME)
 
+    rm_tree.assert_called_with('/tmp')
+
 
 @patch('importlib.import_module')
+@patch('sagemaker_containers.modules.prepare')
 @patch('sagemaker_containers.modules.install')
 @patch('sagemaker_containers.modules.download')
-@patch('tempfile.mkstemp')
+@patch('tempfile.NamedTemporaryFile')
+@patch('tempfile.mkdtemp', lambda: '/tmp')
+@patch('shutil.rmtree')
 @patch(builtins_open, mock_open())
 @patch('tarfile.open')
-def test_download_and_import(tar_open, mkstemp, download, install, import_module):
-    mkstemp.side_effect = ['/tmp-1', '/tmp-2']
+def test_download_and_import(tar_open, rm_tree, named_temporary_file, download, install, prepare, import_module):
+    module = modules.download_and_import('s3://bucket/my-module', 'another_module_name')
 
-    module = modules.download_and_import('s3://bucket/my-module', 'another-module-name')
+    download.assert_called_with('s3://bucket/my-module', named_temporary_file().__enter__().name)
 
-    open_call = open(download('s3://bucket/my-module', '/tmp-1'), 'rb')
+    tar_open().__enter__().extractall.assert_called_with(path='/tmp')
 
-    with tar_open(fileobj=open_call, mode='r:gz') as t:
-        t.extractall.assert_called_with(path='/tmp-2')
+    prepare.assert_called_with('/tmp', 'another_module_name')
+    install.assert_called_with('/tmp')
 
-    install.assert_called_with('/tmp-2')
+    assert module == import_module('another_module_name')
 
-    assert module == import_module('another-module-name')
+    rm_tree.assert_called_with('/tmp')

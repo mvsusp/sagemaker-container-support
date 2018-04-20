@@ -13,16 +13,21 @@
 from __future__ import absolute_import
 
 import importlib
+import logging
 import os
 import shlex
 import shutil
+import subprocess
+import sys
 import tarfile
 import tempfile
+import traceback
 
 import boto3
-import pip
 
 from six.moves.urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_MODULE_NAME = 'default_user_module_name'
 
@@ -39,12 +44,22 @@ def download(url, dst):
     s3.Bucket(bucket).download_file(key, dst)
 
 
-def install(path):
-    print(pip.main(shlex.split('freeze')))
+def prepare(path, name):
+    if not os.path.exists(os.path.join(path, 'setup.py')):
+        logging.info('Module %s does not provide a setup.py. Generating a minimal setup.' % name)
 
-    result = pip.main(shlex.split('install %s -U' % path))
-    if result != pip.status_codes.SUCCESS:
-        raise ValueError('Failed to install module %s with status code %s' % (path, result))
+        with open(os.path.join(path, 'setup.py'), 'w') as f:
+            lines = ['from distutils.core import setup',
+                     'setup(name="%s", py_modules=["%s"])' % (name, name)]
+
+            f.write(os.linesep.join(lines))
+
+
+def install(path):
+    try:
+        subprocess.check_call(shlex.split('%s -m pip install %s -U' % (sys.executable, path)))
+    except subprocess.CalledProcessError:
+        raise ValueError('Failed to pip install %s:%s%s' % (path, os.linesep, traceback.format_exc()))
 
 
 def download_and_import(url, name=DEFAULT_MODULE_NAME):
@@ -57,8 +72,9 @@ def download_and_import(url, name=DEFAULT_MODULE_NAME):
                 try:
                     t.extractall(path=tmpdir)
 
-                    install(tmpdir)
+                    prepare(tmpdir, name)
 
-                    return importlib.import_module(name)
+                    install(tmpdir)
                 finally:
                     shutil.rmtree(tmpdir)
+                    return importlib.import_module(name)

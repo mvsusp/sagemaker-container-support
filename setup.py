@@ -35,6 +35,6 @@ setup(
     install_requires=['boto3', 'six', 'pip'],
 
     extras_require={
-        'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'mock']
+        'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'mock', 'sagemaker']
     }
 )
