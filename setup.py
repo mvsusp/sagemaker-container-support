@@ -32,7 +32,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
     ],
-    install_requires=['boto3', 'six', 'typing'],
+    install_requires=['boto3', 'six', 'typing', 'pip'],
 
     extras_require={
         'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'mock']
