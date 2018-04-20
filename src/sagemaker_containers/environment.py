@@ -210,8 +210,8 @@ class Environment(object):
 
     Example on how a script can use training environment:
         ```
-        >>>import sagemaker_container_support as cs
-        >>>env = cs.Environment.create()
+        >>>import sagemaker_containers as smc
+        >>>env = smc.Environment.create()
 
         get the path of the channel 'training' from the inputdataconfig.json file
         >>>training_dir = env.channel_input_dirs['training']

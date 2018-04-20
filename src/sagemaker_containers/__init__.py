@@ -12,6 +12,6 @@
 # language governing permissions and limitations under the License.
 from __future__ import absolute_import
 
-from sagemaker_container_support.environment import Environment
+from sagemaker_containers.environment import Environment
 
 __all__ = [Environment]
