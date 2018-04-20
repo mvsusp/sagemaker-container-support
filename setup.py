@@ -20,7 +20,7 @@ setup(
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
     long_description=read('README.md'),
     author='Amazon Web Services',
-    url='https://github.com/aws/sagemaker-container-support/',
+    url='https://github.com/aws/sagemaker-containers/',
     license='Apache License 2.0',
 
     classifiers=[
@@ -32,7 +32,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
     ],
-    install_requires=['boto3', 'six', 'typing', 'pip'],
+    install_requires=['boto3', 'six', 'pip'],
 
     extras_require={
         'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'mock']
