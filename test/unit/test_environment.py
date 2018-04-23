@@ -94,18 +94,6 @@ def test_read_key_serialized_hyperparameters(input_config_path):
     assert environment.read_hyperparameters() == ALL_HYPERPARAMETERS
 
 
-def test_split_hyperparameters_only_provided_by_user():
-    assert environment.split_hyperparameters(USER_HYPERPARAMETERS) == ({}, USER_HYPERPARAMETERS)
-
-
-def test_split_hyperparameters_only_provided_by_sagemaker():
-    assert environment.split_hyperparameters(SAGEMAKER_HYPERPARAMETERS) == (SAGEMAKER_HYPERPARAMETERS, {})
-
-
-def test_split_hyperparameters():
-    assert environment.split_hyperparameters(ALL_HYPERPARAMETERS) == (SAGEMAKER_HYPERPARAMETERS, USER_HYPERPARAMETERS)
-
-
 def test_resource_config(input_config_path):
     json_dump(RESOURCE_CONFIG, input_config_path.join('resourceconfig.json'))
 

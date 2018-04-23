@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 from __future__ import absolute_import
 
+import collections
 import json
 import logging
 import multiprocessing
@@ -21,6 +22,8 @@ import subprocess
 
 import boto3
 from six import PY2, reraise
+
+import sagemaker_containers as smc
 
 if PY2:
     JSONDecodeError = None
@@ -94,23 +97,6 @@ def read_hyperparameters():  # type: () -> dict
             logging.warning(hyperparameters)
             return hyperparameters
         reraise(e)
-
-
-def split_hyperparameters(hyperparameters, keys=SAGEMAKER_HYPERPARAMETERS):  # type: (dict, set) -> (dict, dict)
-    """Split a dictionary in two by the provided keys. The default key SAGEMAKER_HYPERPARAMETERS splits user provided
-    hyperparameters from SageMaker Python SDK provided hyperparameters.
-
-    Args:
-        hyperparameters (dict[str, object]): A Python dictionary
-        keys (set[str]): Lists of keys which will be the split criteria
-
-    Returns:
-        criteria (dict[string, object]), not_criteria (dict[string, object]): the result of the split criteria.
-    """
-    dict_matching_criteria = {k: hyperparameters[k] for k in hyperparameters.keys() if k in keys}
-    dict_not_matching_criteria = {k: hyperparameters[k] for k in hyperparameters.keys() if k not in keys}
-
-    return dict_matching_criteria, dict_not_matching_criteria
 
 
 def read_resource_config():  # type: () -> dict
@@ -200,7 +186,7 @@ def cpu_count():  # type: () -> int
     return multiprocessing.cpu_count()
 
 
-class Environment(object):
+class Environment(collections.Mapping):
     """Provides access to aspects of the training environment relevant to training jobs, including
     hyperparameters, system characteristics, filesystem locations, environment variables and configuration settings.
 
@@ -231,6 +217,28 @@ class Environment(object):
         >>>model.save(os.path.join(model_dir, 'saved_model'))
         ```
     """
+
+    def properties(self):
+        _type = type(self)
+
+        def is_property(_property):
+            return isinstance(getattr(_type, _property), property)
+
+        return [_property for _property in dir(_type) if is_property(_property)]
+
+    def __getitem__(self, k):
+        try:
+            return getattr(self, k)
+        except Exception as e:
+            raise e
+            # raise KeyError('%s:%s' % (k, traceback.format_exc()))
+
+    def __len__(self):
+        return len(self.properties())
+
+    def __iter__(self):
+        items = {_property: getattr(self, _property) for _property in self.properties()}
+        return iter(items)
 
     def __init__(self,
                  input_dir,  # type: str
@@ -568,7 +576,8 @@ class Environment(object):
 
         input_data_config = read_input_data_config()
 
-        sagemaker_hyperparameters, hyperparameters = split_hyperparameters(read_hyperparameters())
+        hps = read_hyperparameters()
+        sagemaker_hyperparameters, hyperparameters = smc.collections.split_by_criteria(hps, SAGEMAKER_HYPERPARAMETERS)
 
         sagemaker_region = sagemaker_hyperparameters.get(REGION_PARAM_NAME, session.region_name)
 
