@@ -24,7 +24,6 @@ import tempfile
 import traceback
 
 import boto3
-
 from six.moves.urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -59,7 +58,7 @@ def install(path):
     try:
         subprocess.check_call(shlex.split('%s -m pip install %s -U' % (sys.executable, path)))
     except subprocess.CalledProcessError:
-        raise ValueError('Failed to pip install %s:%s%s' % (path, os.linesep, traceback.format_exc()))
+        raise RuntimeError('Failed to pip install %s:%s%s' % (path, os.linesep, traceback.format_exc()))
 
 
 def download_and_import(url, name=DEFAULT_MODULE_NAME):

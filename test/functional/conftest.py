@@ -15,13 +15,9 @@ import os
 import time
 
 import boto3
-
 import pytest
-
-from sagemaker import Session, fw_utils
-
+from sagemaker import fw_utils, Session
 import six
-
 
 logger = logging.getLogger(__name__)
 

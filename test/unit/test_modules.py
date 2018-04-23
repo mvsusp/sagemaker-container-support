@@ -17,9 +17,7 @@ import subprocess
 import sys
 
 from mock import call, mock_open, patch
-
 import pytest
-
 from six import PY2
 
 from sagemaker_containers import modules
@@ -73,7 +71,7 @@ def test_install(check_call):
 @patch('subprocess.check_call')
 def test_install_fails(check_call):
     check_call.side_effect = subprocess.CalledProcessError(1, 'returned non-zero exit status 1')
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(RuntimeError) as e:
         modules.install('git://aws/container-support')
     assert str(e.value).startswith('Failed to pip install git://aws/container-support:')
 
