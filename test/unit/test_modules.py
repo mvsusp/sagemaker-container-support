@@ -20,7 +20,7 @@ from mock import call, mock_open, patch
 import pytest
 from six import PY2
 
-from sagemaker_containers import modules
+import sagemaker_containers as smc
 
 builtins_open = '__builtin__.open' if PY2 else 'builtins.open'
 
@@ -31,7 +31,7 @@ builtins_open = '__builtin__.open' if PY2 else 'builtins.open'
     ('s3://my-bucket/my-file', 'my-bucket', 'my-file', '/tmp/my-file')
 ])
 def test_download(resource, url, bucket_name, key, dst):
-    modules.download(url, dst)
+    smc.modules.download(url, dst)
 
     chain = call('s3').Bucket(bucket_name).download_file(key, dst)
     assert resource.mock_calls == chain.call_list()
@@ -40,7 +40,7 @@ def test_download(resource, url, bucket_name, key, dst):
 @patch(builtins_open, mock_open())
 @patch('os.path.exists', lambda x: False)
 def test_prepare():
-    modules.prepare('c:/path/to/', 'my-module')
+    smc.modules.prepare('c:/path/to/', 'my-module')
     open.assert_called_with('c:/path/to/setup.py', 'w')
 
     content = os.linesep.join(['from distutils.core import setup',
@@ -52,18 +52,18 @@ def test_prepare():
 @patch(builtins_open, mock_open())
 @patch('os.path.exists', lambda x: True)
 def test_prepare_already_prepared():
-    modules.prepare('c:/path/to/', 'my-module')
+    smc.modules.prepare('c:/path/to/', 'my-module')
     open.assert_not_called()
 
 
 def test_download_wrong_scheme():
     with pytest.raises(ValueError, message="Expecting 's3' scheme, got: c in c://my-bucket/my-file"):
-        modules.download('c://my-bucket/my-file', '/tmp/file')
+        smc.modules.download('c://my-bucket/my-file', '/tmp/file')
 
 
 @patch('subprocess.check_call', autospec=True)
 def test_install(check_call):
-    modules.install('c://sagemaker-pytorch-container')
+    smc.modules.install('c://sagemaker-pytorch-container')
 
     check_call.assert_called_with([sys.executable, '-m', 'pip', 'install', 'c://sagemaker-pytorch-container', '-U'])
 
@@ -72,7 +72,7 @@ def test_install(check_call):
 def test_install_fails(check_call):
     check_call.side_effect = subprocess.CalledProcessError(1, 'returned non-zero exit status 1')
     with pytest.raises(RuntimeError) as e:
-        modules.install('git://aws/container-support')
+        smc.modules.install('git://aws/container-support')
     assert str(e.value).startswith('Failed to pip install git://aws/container-support:')
 
 
@@ -87,16 +87,16 @@ def test_install_fails(check_call):
 @patch('tarfile.open')
 def test_download_and_import_default_name(tar_open, rm_tree, named_temporary_file, download, install, prepare,
                                           import_module):
-    module = modules.download_and_import('s3://bucket/my-module')
+    module = smc.modules.download_and_import('s3://bucket/my-module')
 
     download.assert_called_with('s3://bucket/my-module', named_temporary_file().__enter__().name)
 
     tar_open().__enter__().extractall.assert_called_with(path='/tmp')
 
-    prepare.assert_called_with('/tmp', modules.DEFAULT_MODULE_NAME)
+    prepare.assert_called_with('/tmp', smc.modules.DEFAULT_MODULE_NAME)
     install.assert_called_with('/tmp')
 
-    assert module == import_module(modules.DEFAULT_MODULE_NAME)
+    assert module == import_module(smc.modules.DEFAULT_MODULE_NAME)
 
     rm_tree.assert_called_with('/tmp')
 
@@ -111,7 +111,7 @@ def test_download_and_import_default_name(tar_open, rm_tree, named_temporary_fil
 @patch(builtins_open, mock_open())
 @patch('tarfile.open')
 def test_download_and_import(tar_open, rm_tree, named_temporary_file, download, install, prepare, import_module):
-    module = modules.download_and_import('s3://bucket/my-module', 'another_module_name')
+    module = smc.modules.download_and_import('s3://bucket/my-module', 'another_module_name')
 
     download.assert_called_with('s3://bucket/my-module', named_temporary_file().__enter__().name)
 
