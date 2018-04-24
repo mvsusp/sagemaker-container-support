@@ -19,15 +19,16 @@ import multiprocessing
 import os
 import shlex
 import subprocess
+import sys
 
 import boto3
-from six import PY2, reraise
+import six
 
 import sagemaker_containers as smc
 
-if PY2:
+if six.PY2:
     JSONDecodeError = None
-else:
+elif six.PY3:
     from json.decoder import JSONDecodeError
 
 logger = logging.getLogger(__name__)
@@ -88,15 +89,15 @@ def read_hyperparameters():  # type: () -> dict
 
     try:
         return {k: json.loads(v) for k, v in hyperparameters.items()}
-    except (JSONDecodeError, TypeError):
+    except (JSONDecodeError, TypeError):  # pragma: py2 no cover
         logger.warning("Failed to parse hyperparameters' values to Json. Returning the hyperparameters instead:")
         return hyperparameters
-    except ValueError as e:
+    except ValueError as e:  # pragma: py3 no cover
         if str(e) == 'No JSON object could be decoded':
             logger.warning("Failed to parse hyperparameters' values to Json. Returning the hyperparameters instead:")
             logging.warning(hyperparameters)
             return hyperparameters
-        reraise(e)
+        six.reraise(*sys.exc_info())
 
 
 def read_resource_config():  # type: () -> dict
@@ -218,7 +219,11 @@ class Environment(collections.Mapping):
         ```
     """
 
-    def properties(self):
+    def properties(self):  # type: () -> list
+        """
+        Returns:
+            (list[str]) List of public properties
+        """
         _type = type(self)
 
         def is_property(_property):
@@ -229,9 +234,8 @@ class Environment(collections.Mapping):
     def __getitem__(self, k):
         try:
             return getattr(self, k)
-        except Exception as e:
-            raise e
-            # raise KeyError('%s:%s' % (k, traceback.format_exc()))
+        except AttributeError:
+            six.reraise(KeyError, KeyError('Trying to access invalid key %s' % k), sys.exc_info()[2])
 
     def __len__(self):
         return len(self.properties())

@@ -94,6 +94,16 @@ def test_read_key_serialized_hyperparameters(input_config_path):
     assert environment.read_hyperparameters() == ALL_HYPERPARAMETERS
 
 
+@patch('sagemaker_containers.environment.read_json', lambda x: {'a': 1})
+@patch('json.loads')
+def test_read_exception(loads):
+    loads.side_effect = ValueError('Unable to read.')
+
+    with pytest.raises(ValueError) as e:
+        environment.read_hyperparameters()
+    assert 'Unable to read.' in str(e)
+
+
 def test_resource_config(input_config_path):
     json_dump(RESOURCE_CONFIG, input_config_path.join('resourceconfig.json'))
 
@@ -162,3 +172,61 @@ def json_dump(data, path_obj):  # type: (object, py.path.local) -> None
         path_obj (py.path.local): path.local object of the file to be written
     """
     path_obj.write(json.dumps(data))
+
+
+@patch('sagemaker_containers.environment.read_resource_config', lambda: RESOURCE_CONFIG)
+@patch('sagemaker_containers.environment.read_input_data_config', lambda: INPUT_DATA_CONFIG)
+@patch('sagemaker_containers.environment.read_hyperparameters', lambda: ALL_HYPERPARAMETERS)
+@patch('sagemaker_containers.environment.cpu_count', lambda: 8)
+@patch('sagemaker_containers.environment.gpu_count', lambda: 4)
+def test_environment_properties():
+    env = environment.Environment.create(session=Mock())
+
+    assert env.properties() == ['channel_input_dirs', 'current_host', 'enable_metrics', 'hosts', 'hyperparameters',
+                                'input_config_dir', 'input_data_config', 'input_dir', 'log_level', 'model_dir',
+                                'module_dir', 'module_name', 'num_cpu', 'num_gpu', 'output_data_dir', 'output_dir',
+                                'resource_config']
+
+
+@patch('sagemaker_containers.environment.read_resource_config', lambda: RESOURCE_CONFIG)
+@patch('sagemaker_containers.environment.read_input_data_config', lambda: INPUT_DATA_CONFIG)
+@patch('sagemaker_containers.environment.read_hyperparameters', lambda: ALL_HYPERPARAMETERS)
+@patch('sagemaker_containers.environment.cpu_count', lambda: 8)
+@patch('sagemaker_containers.environment.gpu_count', lambda: 4)
+def test_environment_dictionary():
+    env = environment.Environment.create(session=Mock())
+
+    assert len(env) == len(env.properties())
+
+    assert env['num_gpu'] == 4
+    assert env['num_cpu'] == 8
+    assert env['input_dir'] == '/opt/ml/input'
+    assert env['input_config_dir'] == '/opt/ml/input/config'
+    assert env['model_dir'] == '/opt/ml/model'
+    assert env['output_dir'] == '/opt/ml/output'
+    assert env['hyperparameters'] == USER_HYPERPARAMETERS
+    assert env['resource_config'] == RESOURCE_CONFIG
+    assert env['input_data_config'] == INPUT_DATA_CONFIG
+    assert env['output_data_dir'] == '/opt/ml/output/data'
+    assert env['hosts'] == RESOURCE_CONFIG['hosts']
+    assert env['channel_input_dirs']['train'] == '/opt/ml/input/data/train'
+    assert env['channel_input_dirs']['validation'] == '/opt/ml/input/data/validation'
+    assert env['current_host'] == RESOURCE_CONFIG['current_host']
+    assert env['module_name'] == 'main.py'
+    assert env['module_dir'] == 'imagenet'
+    assert env['enable_metrics']
+    assert env['log_level'] == logging.WARNING
+
+
+@patch('sagemaker_containers.environment.read_resource_config', lambda: RESOURCE_CONFIG)
+@patch('sagemaker_containers.environment.read_input_data_config', lambda: INPUT_DATA_CONFIG)
+@patch('sagemaker_containers.environment.read_hyperparameters', lambda: ALL_HYPERPARAMETERS)
+@patch('sagemaker_containers.environment.cpu_count', lambda: 8)
+@patch('sagemaker_containers.environment.gpu_count', lambda: 4)
+def test_environment_dictionary_get_exception():
+    env = environment.Environment.create(session=Mock())
+
+    with pytest.raises(KeyError) as e:
+        env['non_existent_field']
+
+    assert str(e.value.args[0]) == 'Trying to access invalid key non_existent_field'
