@@ -38,7 +38,7 @@ CURRENT_HOST_ENV = 'CURRENT_HOST'  # type: str
 JOB_NAME_ENV = 'JOB_NAME'  # type: str
 USE_NGINX_ENV = 'SAGEMAKER_USE_NGINX'  # type: str
 
-BASE_PATH = os.environ.get(BASE_PATH_ENV, os.path.join('/opt', 'ml'))  # type: str
+BASE_PATH = os.environ.get(BASE_PATH_ENV, os.path.join(os.sep, 'opt', 'ml'))  # type: str
 
 MODEL_PATH = os.path.join(BASE_PATH, 'model')  # type: str
 INPUT_PATH = os.path.join(BASE_PATH, 'input')  # type: str
@@ -368,7 +368,7 @@ class Environment(collections.Mapping):
         self._current_host = current_host
         self._num_gpu = num_gpu
         self._num_cpu = num_cpu
-        self._module_name = module_name
+        self._module_name = self._parse_module_name(module_name)
         self._module_dir = module_dir
         self._enable_metrics = enable_metrics
         self._log_level = log_level
@@ -607,3 +607,19 @@ class Environment(collections.Mapping):
                    enable_metrics=sagemaker_hyperparameters.get(ENABLE_METRICS_PARAM, False),
                    log_level=sagemaker_hyperparameters.get(LOG_LEVEL_PARAM, logging.INFO)
                    )
+
+    @staticmethod
+    def _parse_module_name(program_param):
+        """Given a module name or a script name, Returns the module name.
+
+        This function is used for backwards compatibility.
+
+        Args:
+            program_param (str): Module or script name.
+
+        Returns:
+            (str): Module name
+        """
+        if program_param.endswith('.py'):
+            return program_param[:-3]
+        return program_param
