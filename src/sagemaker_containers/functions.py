@@ -19,7 +19,7 @@ import six
 import sagemaker_containers as smc
 
 
-def matching_args(fn, dictionary):  # type: (function, dict) -> dict
+def matching_args(fn, dictionary):  # type: (function, collections.Mapping) -> dict
     """Given a function fn and a dict dictionary, returns the function arguments that match the dict keys.
 
     Example:
