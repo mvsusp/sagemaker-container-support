@@ -28,7 +28,7 @@ INPUT_DATA_CONFIG = {'training': {'ContentType': 'trainingContentType',
                                   'S3DistributionType': 'FullyReplicated',
                                   'RecordWrapperType': 'None'}}
 
-hyperparameters = dict(training_data_file='training_data.npz', sagemaker_region='us-west-2',
+HYPERPARAMETERS = dict(training_data_file='training_data.npz', sagemaker_region='us-west-2',
                        default_user_module_name='net',
                        sagemaker_job_name='sagemaker-training-job', sagemaker_enable_cloudwatch_metrics=True,
                        sagemaker_container_log_level=logging.WARNING, sagemaker_program='user_script.py')
@@ -73,7 +73,7 @@ def keras_framework_training_fn():
 
 
 def test_keras_framework(create_channel, create_training):
-    create_training(script_name='user_script.py', script=USER_SCRIPT, hyperparameters=hyperparameters,
+    create_training(script_name='user_script.py', script=USER_SCRIPT, hyperparameters=HYPERPARAMETERS,
                     resource_config=RESOURCE_CONFIG, input_data_config=INPUT_DATA_CONFIG)
 
     features = np.random.random((10, 1))
