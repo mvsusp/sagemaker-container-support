@@ -43,7 +43,7 @@ def matching_args(fn, dictionary):  # type: (function, collections.Mapping) -> d
     if arg_spec.keywords:
         return dictionary
 
-    return smc.collections.split_by_criteria(dictionary, set(arg_spec.args)).included
+    return smc.collections.split_by_criteria(dictionary, arg_spec.args).included
 
 
 def getargspec(fn):  # type: (function) -> inspect.ArgSpec

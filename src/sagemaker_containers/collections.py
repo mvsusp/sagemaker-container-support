@@ -14,24 +14,25 @@ from __future__ import absolute_import
 
 import collections
 
-SplitByCriteriaSpec = collections.namedtuple('SplitByCriteriaSpec', 'included not_included')
+SplitResultSpec = collections.namedtuple('SplitResultSpec', 'included excluded')
 
 
-def split_by_criteria(dictionary, keys):  # type: (dict, set) -> SplitByCriteriaSpec
+def split_by_criteria(dictionary, keys):  # type: (dict, set or list or tuple) -> SplitResultSpec
     """Split a dictionary in two by the provided keys.
 
     Args:
         dictionary (dict[str, object]): A Python dictionary
-        keys (set[str]): Set of keys which will be the split criteria
+        keys (sequence [str]): A sequence of keys which will be the split criteria
 
     Returns:
-        `SplitByCriteriaSpec` : A collections.namedtuple with the following attributes:
+        `SplitResultSpec` : A collections.namedtuple with the following attributes:
 
             * Args:
                 included (dict[str, object]: A dictionary with the keys included in the criteria.
-                not_included (dict[str, object]: A dictionary with the keys not included in the criteria.
+                excluded (dict[str, object]: A dictionary with the keys not included in the criteria.
     """
-    dict_matching_criteria = {k: dictionary[k] for k in dictionary.keys() if k in keys}
-    dict_not_matching_criteria = {k: dictionary[k] for k in dictionary.keys() if k not in keys}
+    keys = set(keys)
+    included_items = {k: dictionary[k] for k in dictionary.keys() if k in keys}
+    excluded_items = {k: dictionary[k] for k in dictionary.keys() if k not in keys}
 
-    return SplitByCriteriaSpec(included=dict_matching_criteria, not_included=dict_not_matching_criteria)
+    return SplitResultSpec(included=included_items, excluded=excluded_items)

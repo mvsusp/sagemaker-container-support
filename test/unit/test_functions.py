@@ -26,14 +26,16 @@ import sagemaker_containers as smc
     (lambda **kwargs: None, inspect.ArgSpec([], None, 'kwargs', None)),
     (lambda x, y, *args, **kwargs: None, inspect.ArgSpec(['x', 'y'], 'args', 'kwargs', None))
 ])
-def test_signature(fn, expected):
+def test_getargspec(fn, expected):
     assert smc.functions.getargspec(fn) == expected
 
 
 @pytest.mark.parametrize('fn, environment, expected', [
     (lambda: None, {}, {}),
     (lambda x, y='y': None, dict(x='x', y=None, t=3), dict(x='x', y=None)),
+    (lambda not_in_env_arg: None, dict(x='x', y=None, t=3), {}),
     (lambda *args: None, dict(x='x', y=None, t=3), {}),
+    (lambda *arguments, **keywords: None, dict(x='x', y=None, t=3), dict(x='x', y=None, t=3)),
     (lambda **kwargs: None, dict(x='x', y=None, t=3), dict(x='x', y=None, t=3))
 ])
 def test_matching_args(fn, environment, expected):
