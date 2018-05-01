@@ -12,20 +12,22 @@
 # language governing permissions and limitations under the License.
 from __future__ import absolute_import
 
+import inspect
+
 import pytest as pytest
 
 import sagemaker_containers as smc
 
 
 @pytest.mark.parametrize('fn, expected', [
-    (lambda: None, ([], None, None)),
-    (lambda x, y='y': None, (['x', 'y'], None, None)),
-    (lambda *args: None, ([], 'args', None)),
-    (lambda **kwargs: None, ([], None, 'kwargs')),
-    (lambda x, y, *args, **kwargs: None, (['x', 'y'], 'args', 'kwargs'))
+    (lambda: None, inspect.ArgSpec([], None, None, None)),
+    (lambda x, y='y': None, inspect.ArgSpec(['x', 'y'], None, None, ('y',))),
+    (lambda *args: None, inspect.ArgSpec([], 'args', None, None)),
+    (lambda **kwargs: None, inspect.ArgSpec([], None, 'kwargs', None)),
+    (lambda x, y, *args, **kwargs: None, inspect.ArgSpec(['x', 'y'], 'args', 'kwargs', None))
 ])
 def test_signature(fn, expected):
-    assert smc.functions.signature(fn) == expected
+    assert smc.functions.getargspec(fn) == expected
 
 
 @pytest.mark.parametrize('fn, environment, expected', [

@@ -38,41 +38,31 @@ def matching_args(fn, dictionary):  # type: (function, collections.Mapping) -> d
     Returns:
         (dict) a dictionary with only matching arguments.
     """
-    args, _, kwargs = signature(fn)
+    arg_spec = getargspec(fn)
 
-    if kwargs:
+    if arg_spec.keywords:
         return dictionary
 
-    return smc.collections.split_by_criteria(dictionary, set(args))[0]
+    return smc.collections.split_by_criteria(dictionary, set(arg_spec.args)).included
 
 
-def signature(fn):  # type: (function) -> ([], [], [])
-    """Given a function fn, returns the function args, vargs and kwargs
+def getargspec(fn):  # type: (function) -> inspect.ArgSpec
+    """Get the names and default values of a function's arguments.
 
     Args:
         fn (function): a function
 
     Returns:
-        ([], [], []): a tuple containing the function args, vargs and kwargs.
+        `inspect.ArgSpec`:  A collections.namedtuple with the following attributes:
+
+            * Args:
+                args (list): a list of the argument names (it may contain nested lists).
+                varargs (str): name of the * argument or None.
+                keywords (str): names of the ** argument or None.
+                defaults (tuple): an n-tuple of the default values of the last n arguments.
     """
     if six.PY2:
-        arg_spec = inspect.getargspec(fn)
-        return arg_spec.args, arg_spec.varargs, arg_spec.keywords
+        return inspect.getargspec(fn)
     elif six.PY3:
-        sig = inspect.signature(fn)
-
-        def filter_parameters(kind):
-            return [
-                p.name for p in sig.parameters.values()
-                if p.kind == kind
-            ]
-
-        args = filter_parameters(inspect.Parameter.POSITIONAL_OR_KEYWORD)
-
-        vargs = filter_parameters(inspect.Parameter.VAR_POSITIONAL)
-
-        kwargs = filter_parameters(inspect.Parameter.VAR_KEYWORD)
-
-        return (args,
-                vargs[0] if vargs else None,
-                kwargs[0] if kwargs else None)
+        full_arg_spec = inspect.getfullargspec(fn)
+        return inspect.ArgSpec(full_arg_spec.args, full_arg_spec.varargs, full_arg_spec.varkw, full_arg_spec.defaults)
