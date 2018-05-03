@@ -15,7 +15,6 @@ from mock import call, patch, PropertyMock
 from sagemaker_containers.environment import ServingEnvironment
 from sagemaker_containers.server import start
 
-
 @patch.object(ServingEnvironment, 'model_server_workers', PropertyMock(return_value=2))
 @patch.object(ServingEnvironment, 'model_server_timeout', PropertyMock(return_value=100))
 @patch.object(ServingEnvironment, 'use_nginx', PropertyMock(return_value=False))
