@@ -40,7 +40,7 @@ setup(
     install_requires=['boto3', 'six', 'pip', 'flask', 'gunicorn', 'gevent'],
 
     extras_require={
-        'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'mock', 'sagemaker', 'numpy']
+        'test': ['tox', 'flake8', 'pytest', 'pytest-cov', 'mock', 'sagemaker', 'numpy', 'requests']
     },
 
     entry_points={

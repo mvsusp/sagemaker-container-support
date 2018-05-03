@@ -11,40 +11,28 @@
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
 import os
-import threading
+import subprocess
+import sys
 import time
 
-import urllib3
+import requests
 
 import sagemaker_containers as smc
 
 
+CURRENT_DIR = os.path.join(os.path.dirname(__file__))
+
+
 def test_server():
-    os.environ[smc.environment.FRAMEWORK_MODULE_ENV] = 'test.functional.simple_flask:app'
-    os.environ[smc.environment.USE_NGINX_ENV] = 'false'
+    environ = os.environ.copy()
+    environ[smc.environment.USE_NGINX_ENV] = 'false'
 
-    env = smc.environment.ServingEnvironment()
-
-    def worker():
-        smc.server.start(env.framework_module)
-
-    t = threading.Thread(target=worker)
-    t.start()
-
-    time.sleep(2)
-
-    http = urllib3.PoolManager()
-    base_url = 'http://127.0.0.1:8080'
-    r = http.request('GET', '{}/ping'.format(base_url))
-    assert r.status == 200
-
-    r = http.request('GET', '{}/invocations'.format(base_url))
-    assert r.status == 200
-    assert r.data.decode('utf-8') == 'invocation'
-
-    # shut down the server or else it will go on forever.
+    application_path = os.path.join(CURRENT_DIR, 'simple_flask.py')
+    process = subprocess.Popen(args=[sys.executable, application_path], env=environ)
     try:
-        http.request('GET', '{}/shutdown'.format(base_url))
-    except urllib3.exceptions.MaxRetryError:
-        # the above request will kill the server so it is expected that it fails.
-        pass
+        time.sleep(2)
+
+        assert requests.get('http://127.0.0.1:8080/ping').status_code == 200
+    finally:
+        process.terminate()
+        time.sleep(2)
