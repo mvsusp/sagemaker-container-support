@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 from __future__ import absolute_import
 
+import collections
 import textwrap
 
 from sagemaker_containers import encoders, env, functions, worker
@@ -91,6 +92,25 @@ class ClientError(BaseException):
     pass
 
 
+DefaultFunctions = collections.namedtuple('DefaultFunctions', 'model_fn input_fn predict_fn output_fn')
+
+DEFAULT_FUNCTIONS = DefaultFunctions(model_fn=default_model_fn, input_fn=default_input_fn,
+                                     predict_fn=default_predict_fn, output_fn=default_output_fn)
+
+
+def from_module(module, default_functions=DEFAULT_FUNCTIONS):
+    model_fn = getattr(module, 'model_fn', default_functions.model_fn)
+    input_fn = getattr(module, 'input_fn', default_functions.input_fn)
+    predict_fn = getattr(module, 'predict_fn', default_functions.predict_fn)
+    output_fn = getattr(module, 'output_fn', default_functions.output_fn)
+
+    return Transformer(model_fn=model_fn, input_fn=input_fn, predict_fn=predict_fn, output_fn=output_fn)
+
+
+def from_functions(model_fn=None, input_fn=None, predict_fn=None, output_fn=None):
+    return Transformer(model_fn=model_fn, input_fn=input_fn, predict_fn=predict_fn, output_fn=output_fn)
+
+
 class Transformer(object):
     """The Transformer is a proxy between the worker and the framework transformation functions.
 
@@ -114,17 +134,50 @@ class Transformer(object):
     >>>transformer.load_user_fns(mod)
     """
 
-    def __init__(self, model_fn=None, input_fn=None, predict_fn=None, output_fn=None, error_class=ClientError):
+    def __init__(self, user_module=None, model_fn=None, input_fn=None,
+                 predict_fn=None, output_fn=None, error_class=ClientError):
         """Default constructor. Wraps the any non default framework function in an error class to isolate
         framework from user errors.
 
         Args:
+            user_module (module): Module with model_fn, input_fn, predict_fn, and output_fn.
             model_fn (fn): Function responsible to load the model.
             input_fn (fn): Takes request data and de-serializes the data into an object for prediction.
             predict_fn (fn): Function responsible for model predictions.
             output_fn (fn): Function responsible to serialize the prediction for the response.
             error_class (Exception): Error class used to separate framework and user errors.
         """
+        model_fn = getattr(user_module, 'model_fn', model_fn)
+        input_fn = getattr(user_module, 'input_fn', input_fn)
+        predict_fn = getattr(user_module, 'predict_fn', predict_fn)
+        output_fn = getattr(user_module, 'output_fn', output_fn)
+
+        self._model = None
+        self._model_fn = functions.error_wrapper(model_fn, error_class) if model_fn else default_model_fn
+        self._input_fn = functions.error_wrapper(input_fn, error_class) if input_fn else default_input_fn
+        self._predict_fn = functions.error_wrapper(predict_fn, error_class) if predict_fn else default_predict_fn
+        self._output_fn = functions.error_wrapper(output_fn, error_class) if output_fn else default_output_fn
+        self._error_class = error_class
+
+    @classmethod
+    def from_user_method(cls, user_module=None, model_fn=None, input_fn=None,
+                         predict_fn=None, output_fn=None, error_class=ClientError):
+        """Default constructor. Wraps the any non default framework function in an error class to isolate
+        framework from user errors.
+
+        Args:
+            user_module (module): Module with model_fn, input_fn, predict_fn, and output_fn.
+            model_fn (fn): Function responsible to load the model.
+            input_fn (fn): Takes request data and de-serializes the data into an object for prediction.
+            predict_fn (fn): Function responsible for model predictions.
+            output_fn (fn): Function responsible to serialize the prediction for the response.
+            error_class (Exception): Error class used to separate framework and user errors.
+        """
+        model_fn = getattr(user_module, 'model_fn', model_fn)
+        input_fn = getattr(user_module, 'input_fn', input_fn)
+        predict_fn = getattr(user_module, 'predict_fn', predict_fn)
+        output_fn = getattr(user_module, 'output_fn', output_fn)
+
         self._model = None
         self._model_fn = functions.error_wrapper(model_fn, error_class) if model_fn else default_model_fn
         self._input_fn = functions.error_wrapper(input_fn, error_class) if input_fn else default_input_fn
