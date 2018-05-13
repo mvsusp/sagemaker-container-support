@@ -13,8 +13,34 @@
 from __future__ import absolute_import
 
 import collections
+import itertools
 
 SplitResultSpec = collections.namedtuple('SplitResultSpec', 'included excluded')
+
+
+def to_cmd_args(mapping):  # type: (dict) -> list
+    """Transform a dictionary in a list of cmd arguments.
+
+    Example:
+
+        >>>args = mapping.to_cmd_args({'model_dir': '/opt/ml/model', 'batch_size': 25})
+        >>>
+        >>>print(args)
+        ['--model_dir', '/opt/ml/model', '--batch_size', 25]
+
+    Args:
+        mapping (dict[str, object]): A Python mapping.
+
+    Returns:
+        (list): List of cmd arguments
+    """
+    arg_names = ['--%s' % argument for argument in mapping.keys()]
+
+    arg_values = [str(value) for value in mapping.values()]
+
+    items = zip(arg_names, arg_values)
+
+    return list(itertools.chain.from_iterable(items))
 
 
 def split_by_criteria(dictionary, keys):  # type: (dict, set or list or tuple) -> SplitResultSpec
