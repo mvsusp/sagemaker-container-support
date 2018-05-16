@@ -21,7 +21,7 @@ import test
 from test import fake_ml_framework
 
 
-def predict_fn(model, data):
+def predict_fn(data, model):
     return model.predict(data)
 
 

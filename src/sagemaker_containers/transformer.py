@@ -54,7 +54,7 @@ def default_input_fn(input_data, content_type):
     return encoders.decode(input_data, content_type)
 
 
-def default_predict_fn(model, data):
+def default_predict_fn(data, model):
     """Function responsible for model predictions.
 
     Args:
@@ -136,7 +136,7 @@ class Transformer(object):
         This function will be called once per each worker.
         It does not have return type or arguments.
         """
-        self._model = self._model_fn(model_dir=env.ServingEnv().model_dir)
+        self._model = self._model_fn(env.ServingEnv().model_dir)
 
     def transform(self):  # type: () -> worker.Response
         """Responsible to make predictions against the model.
@@ -150,9 +150,9 @@ class Transformer(object):
         """
         request = worker.Request()
 
-        data = self._input_fn(input_data=request.content, content_type=request.content_type)
-        prediction = self._predict_fn(model=self._model, data=data)
-        result = self._output_fn(prediction=prediction, accept=request.accept)
+        data = self._input_fn(request.content, request.content_type)
+        prediction = self._predict_fn(data, self._model)
+        result = self._output_fn(prediction, request.accept)
 
         if isinstance(result, tuple):
             # transforms tuple in Response for backwards compatibility

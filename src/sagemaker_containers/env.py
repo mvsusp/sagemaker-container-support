@@ -428,6 +428,8 @@ class TrainingEnv(Env):
                 saved.
         framework_module (str):  Name of the framework module and entry point. For example:
             my_module:main
+
+        network_interface_name (str): Name of the network interface used for distributed training
     """
 
     def __init__(self):
@@ -436,7 +438,9 @@ class TrainingEnv(Env):
         resource_config = read_resource_config()
         current_host = resource_config['current_host']
         hosts = resource_config['hosts']
+        network_interface_name = resource_config.get('network_interface_name', 'ethwe')
         input_data_config = read_input_data_config()
+
         all_hyperparameters = read_hyperparameters()
         split_result = mapping.split_by_criteria(all_hyperparameters, SAGEMAKER_HYPERPARAMETERS)
 
@@ -448,13 +452,14 @@ class TrainingEnv(Env):
         os.environ[REGION_NAME_ENV] = sagemaker_region
 
         self._hosts = hosts
+        self._network_interface_name = network_interface_name
         self._input_dir = INPUT_PATH
         self._input_config_dir = INPUT_CONFIG_PATH
         self._output_dir = OUTPUT_PATH
         self._hyperparameters = split_result.excluded
         self._resource_config = resource_config
         self._input_data_config = input_data_config
-        self._output_data_dir = OUTPUT_DATA_PATH
+        self._output_data_dir = os.path.join(OUTPUT_DATA_PATH, current_host)
         self._channel_input_dirs = {channel: channel_path(channel) for channel in input_data_config}
         self._current_host = current_host
 
@@ -470,9 +475,18 @@ class TrainingEnv(Env):
         """The list of names of all containers on the container network, sorted lexicographically.
                 For example, `["algo-1", "algo-2", "algo-3"]` for a three-node cluster.
         Returns:
-              list[str]: all the hosts in the training network.
+              (list[str]): all the hosts in the training network.
         """
         return self._hosts
+
+    @property
+    def network_interface_name(self):  # type: () -> str
+        """Name of the network interface used for distributed training
+
+        Returns:
+              (str): name of the network interface, for example, 'ethwe'
+        """
+        return self._network_interface_name
 
     @property
     def input_dir(self):  # type: () -> str
@@ -567,12 +581,12 @@ class TrainingEnv(Env):
     @property
     def output_data_dir(self):  # type: () -> str
         """The dir to write non-model training artifacts (e.g. evaluation results) which will be retained
-        by SageMaker, e.g. /opt/ml/output/data.
+        by SageMaker, e.g. /opt/ml/output/data/{current_host}.
         As your algorithm runs in a container, it generates output including the status of the
         training job and model and output artifacts. Your algorithm should write this information
         to the this directory.
         Returns:
-            (str): the path to output data directory, e.g. /opt/ml/output/data.
+            (str): the path to output data directory, e.g. /opt/ml/output/data/algo-1.
         """
         return self._output_data_dir
 
