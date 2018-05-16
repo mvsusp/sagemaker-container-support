@@ -38,17 +38,19 @@ def array_to_npy(array_like):  # type: (np.array or Iterable or int or float) ->
     return buffer.getvalue()
 
 
-def npy_to_numpy(npy_array):  # type: (object) -> np.array
+def npy_to_numpy(npy_array, dtype=np.float32):  # type: (object) -> np.array
     """Convert an NPY array into numpy.
 
     Args:
+        dtype (dtype, optional):  Data type of the resulting array.
+                                    If None, the dtypes will be determined by the contents of each column, individually.
         npy_array (npy array): to be converted to numpy array
 
     Returns:
         (np.array): converted numpy array.
     """
     stream = BytesIO(npy_array)
-    return np.load(stream)
+    return np.load(stream).astype(dtype)
 
 
 def unicode_to_str(string_like):  # type: (str or unicode) -> str
@@ -89,30 +91,34 @@ def array_to_json(array_like):  # type: (np.array or Iterable or int or float) -
     return json.dumps(array_like, default=default)
 
 
-def json_to_numpy(string_like):  # type: (str or unicode) -> np.array
+def json_to_numpy(string_like, dtype=np.float32):  # type: (str or unicode) -> np.array
     """Convert a JSON object to a numpy array.
 
         Args:
+            dtype (dtype, optional):  Data type of the resulting array.
+                                    If None, the dtypes will be determined by the contents of each column, individually.
             string_like (str): JSON string.
 
         Returns:
             (np.array): numpy array
         """
     data = json.loads(unicode_to_str(string_like))
-    return np.array(data)
+    return np.array(data).astype(dtype=dtype)
 
 
-def csv_to_numpy(string_like):  # type: (str or unicode) -> np.array
+def csv_to_numpy(string_like, dtype=np.float32):  # type: (str or unicode) -> np.array
     """Convert a CSV object to a numpy array.
 
     Args:
+        dtype (dtype, optional):  Data type of the resulting array.
+                                    If None, the dtypes will be determined by the contents of each column, individually.
         string_like (str): CSV string.
 
     Returns:
         (np.array): numpy array
     """
     stream = StringIO(unicode_to_str(string_like))
-    return np.genfromtxt(stream, delimiter=',')
+    return np.genfromtxt(stream, dtype=dtype, delimiter=',')
 
 
 def array_to_csv(array_like):  # type: (np.array or Iterable or int or float) -> str

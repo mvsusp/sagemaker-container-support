@@ -17,10 +17,10 @@ import pytest
 from sagemaker_containers import content_types, encoders
 
 
-@patch('numpy.load', lambda x: 'loaded %s' % x)
+@patch('numpy.load', lambda x: np.array([42]))
 @patch('sagemaker_containers.encoders.BytesIO', lambda x: 'byte io %s' % x)
 def test_npy_to_numpy():
-    assert encoders.npy_to_numpy(42) == 'loaded byte io 42'
+    assert encoders.npy_to_numpy(42) == np.array([42])
 
 
 @patch('numpy.save', autospec=True)
@@ -32,9 +32,11 @@ def array_to_npy(bytes_io, save):
     save.assert_called_with(bytes_io(), 42)
 
 
-@patch('json.loads', lambda x: 'loaded %s' % x)
+@patch('json.loads', lambda x: [42.324])
 def test_json_to_numpy():
-    assert encoders.json_to_numpy(42) == 'loaded 42'
+    assert encoders.json_to_numpy(42) == np.array([42.324], dtype=np.float32)
+
+    assert encoders.json_to_numpy(42, dtype=int) == np.array([42])
 
 
 def test_array_to_json():
@@ -46,13 +48,9 @@ def test_array_to_json():
         encoders.array_to_json(lambda x: 3)
 
 
-@patch('numpy.genfromtxt', autospec=True)
-@patch('sagemaker_containers.encoders.StringIO', autospec=True)
-def test_csv_to_numpy(string_io, genfromtxt):
-    encoders.csv_to_numpy('42')
-
-    string_io.assert_called_with('42')
-    genfromtxt.assert_called_with(string_io(), delimiter=',')
+def test_csv_to_numpy():
+    assert encoders.csv_to_numpy('42.324') == np.array([42.324], dtype=np.float32)
+    assert encoders.csv_to_numpy('42.324', dtype=np.int32) == np.array([42], dtype=int)
 
 
 @patch('numpy.savetxt', autospec=True)
