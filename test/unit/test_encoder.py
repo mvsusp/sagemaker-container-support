@@ -52,7 +52,7 @@ def test_csv_to_numpy(string_io, genfromtxt):
     encoders.csv_to_numpy('42')
 
     string_io.assert_called_with('42')
-    genfromtxt.assert_called_with(string_io(), dtype=np.float32, delimiter=',')
+    genfromtxt.assert_called_with(string_io(), delimiter=',')
 
 
 @patch('numpy.savetxt', autospec=True)
