@@ -73,15 +73,14 @@ def test_download_and_import_script_with_requirements(user_module_name):
 
     module = modules.download_and_import(user_module.url, user_module_name, cache=False)
 
-    # flake8: noqa ignore=W291 trailing whitespace
     assert module.say() == """
- ____                   __  __       _             
-/ ___|  __ _  __ _  ___|  \/  | __ _| | _____ _ __ 
+ ____                   __  __       _.............
+/ ___|  __ _  __ _  ___|  \/  | __ _| | _____ _ __.
 \___ \ / _` |/ _` |/ _ \ |\/| |/ _` | |/ / _ \ '__|
- ___) | (_| | (_| |  __/ |  | | (_| |   <  __/ |   
-|____/ \__,_|\__, |\___|_|  |_|\__,_|_|\_\___|_|   
-             |___/                                 
-""".strip()
+ ___) | (_| | (_| |  __/ |  | | (_| |   <  __/ |...
+|____/ \__,_|\__, |\___|_|  |_|\__,_|_|\_\___|_|...
+             |___/.................................
+""".replace('.', ' ').strip()
 
 
 content = textwrap.dedent("""
