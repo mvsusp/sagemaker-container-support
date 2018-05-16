@@ -41,7 +41,7 @@ def test_predict_fn():
         transformer.default_predict_fn('data', 'model')
 
 
-request = test.request(data='42')
+request = test.request(data='42', content_type=content_types.JSON)
 
 
 def test_transformer_initialize_with_default_model_fn():
@@ -102,7 +102,6 @@ def test_transformer_transform(response):
                                         predict_fn=predict_fn, output_fn=output_fn)
 
     transform.initialize()
-
     assert transform.transform() == response
 
     input_fn.assert_called_with(request.content, request.content_type)

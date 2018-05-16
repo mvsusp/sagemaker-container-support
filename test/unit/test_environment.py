@@ -98,7 +98,7 @@ def test_channel_input_dirs():
     assert env.channel_path('training') == os.path.join(input_data_path, 'training')
 
 
-@patch('subprocess.check_output', lambda s: six.b('GPU 0\nGPU 1'))
+@patch('subprocess.check_output', lambda s: b'GPU 0\nGPU 1')
 def test_gpu_count_in_gpu_instance():
     assert env.gpu_count() == 2
 
