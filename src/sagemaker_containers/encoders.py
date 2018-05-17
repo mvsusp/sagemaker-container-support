@@ -38,13 +38,11 @@ def array_to_npy(array_like):  # type: (np.array or Iterable or int or float) ->
     return buffer.getvalue()
 
 
-def npy_to_numpy(npy_array, dtype=np.float32):  # type: (object) -> np.array
+def npy_to_numpy(npy_array):  # type: (object) -> np.array
     """Convert an NPY array into numpy.
 
     Args:
         npy_array (npy array): to be converted to numpy array
-        dtype (dtype, optional):  Data type of the resulting array.
-                                    If None, the dtypes will be determined by the contents of each column, individually.
     Returns:
         (np.array): converted numpy array.
     """
@@ -73,27 +71,29 @@ def array_to_json(array_like):  # type: (np.array or Iterable or int or float) -
     return json.dumps(array_like, default=default)
 
 
-def json_to_numpy(string_like, dtype=np.float32):  # type: (str or unicode) -> np.array
+def json_to_numpy(string_like, dtype=None):  # type: (str or unicode) -> np.array
     """Convert a JSON object to a numpy array.
 
         Args:
             string_like (str): JSON string.
-            dtype (dtype, optional):  Data type of the resulting array.
-                                    If None, the dtypes will be determined by the contents of each column, individually.
+            dtype (dtype, optional):  Data type of the resulting array. If None, the dtypes will be determined by the
+                                        contents of each column, individually. This argument can only be used to
+                                        'upcast' the array.  For downcasting, use the .astype(t) method.
         Returns:
             (np.array): numpy array
         """
     data = json.loads(string_like)
-    return np.array(data).astype(dtype=dtype)
+    return np.array(data, dtype=dtype)
 
 
-def csv_to_numpy(string_like, dtype=np.float32):  # type: (str or unicode) -> np.array
+def csv_to_numpy(string_like, dtype=None):  # type: (str or unicode) -> np.array
     """Convert a CSV object to a numpy array.
 
     Args:
         string_like (str): CSV string.
-        dtype (dtype, optional):  Data type of the resulting array.
-                                    If None, the dtypes will be determined by the contents of each column, individually.
+        dtype (dtype, optional):  Data type of the resulting array. If None, the dtypes will be determined by the
+                                        contents of each column, individually. This argument can only be used to
+                                        'upcast' the array.  For downcasting, use the .astype(t) method.
     Returns:
         (np.array): numpy array
     """
