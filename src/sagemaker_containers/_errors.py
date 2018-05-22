@@ -35,7 +35,7 @@ class _CalledProcessError(Exception):
     def __str__(self):
         # transforms a byte string (b'') in unicode
         error = self.output.decode('latin1') if six.PY3 else self.output
-        message = '%s:\nCommand "%s"\n%s' % (type(self).__name__, self.cmd, error)
+        message = '%s:\nCommand "%s"\n%s' % (type(self).__name__, ' '.join(self.cmd), error)
         return message.strip()
 
 

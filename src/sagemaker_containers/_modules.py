@@ -206,7 +206,12 @@ def run(module_name, args=None):  # type: (str, list) -> None
     """
     args = args or []
 
-    _check_error([python_executable(), '-m', module_name] + args, _errors.ExecuteUserScriptError)
+    cmd = [python_executable(), '-m', module_name] + args
+
+    logger.info('Executing user script %s with the command:', module_name)
+    logger.info(' '.join(cmd))
+
+    _check_error(cmd, _errors.ExecuteUserScriptError)
 
 
 def _check_error(cmd, error_class, **kwargs):
