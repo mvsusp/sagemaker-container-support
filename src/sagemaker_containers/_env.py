@@ -55,7 +55,7 @@ def _is_training_path_configured():  # type: () -> bool
         (bool): indicating whether the training path is configured or not.
 
     """
-    return os.path.exists(SAGEMAKER_BASE_PATH) or BASE_PATH_ENV in os.environ
+    return os.path.exists(os.path.join(SAGEMAKER_BASE_PATH, 'input', 'config')) or BASE_PATH_ENV in os.environ
 
 
 def _set_base_path_env():  # type: () -> None
