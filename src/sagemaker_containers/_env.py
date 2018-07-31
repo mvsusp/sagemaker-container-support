@@ -66,11 +66,13 @@ def _set_base_path_env():  # type: () -> None
         (bool): indicating whe
     """
 
-    local_config_dir = os.path.join(os.path.expanduser('~'), 'sagemaker_local', 'jobs',
-                                    str(time.time()), 'opt', 'ml')
+    if not os.path.exists(SAGEMAKER_BASE_PATH):
+    
+        local_config_dir = os.path.join(os.path.expanduser('~'), 'sagemaker_local', 'jobs',
+                                        str(time.time()), 'opt', 'ml')
 
-    logger.info('Setting environment variable SAGEMAKER_BASE_DIR as %s .' % local_config_dir)
-    os.environ[BASE_PATH_ENV] = local_config_dir
+        logger.info('Setting environment variable SAGEMAKER_BASE_DIR as %s .' % local_config_dir)
+        os.environ[BASE_PATH_ENV] = local_config_dir
 
 
 _is_path_configured = _is_training_path_configured()
