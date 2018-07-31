@@ -160,7 +160,7 @@ def _create_training_directories():
         input_data_config_dict = {channel: {} for channel in os.listdir(_input_data_dir)}
         _write_json(input_data_config_dict, input_data_config_file_dir)
 
-    if not os.path.exists(output_data_dir):
+    if not os.path.exists(resource_config_file_dir):
         host_name = socket.gethostname()
 
         resources_dict = {
