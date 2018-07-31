@@ -67,7 +67,7 @@ def _set_base_path_env():  # type: () -> None
     """
 
     if not os.path.exists(SAGEMAKER_BASE_PATH):
-    
+
         local_config_dir = os.path.join(os.path.expanduser('~'), 'sagemaker_local', 'jobs',
                                         str(time.time()), 'opt', 'ml')
 
@@ -144,22 +144,30 @@ def _create_training_directories():
     """
     logger.info('Creating a new training folder under %s .' % base_dir)
 
-    os.makedirs(model_dir)
-    os.makedirs(input_config_dir)
-    os.makedirs(output_data_dir)
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
 
-    _write_json({}, hyperparameters_file_dir)
+    if not os.path.exists(input_config_dir):
+        os.makedirs(input_config_dir)
 
-    input_data_config_dict = {channel: {} for channel in os.listdir(_input_data_dir)}
-    _write_json(input_data_config_dict, input_data_config_file_dir)
+    if not os.path.exists(output_data_dir):
+        os.makedirs(output_data_dir)
 
-    host_name = socket.gethostname()
+    if not os.path.exists(hyperparameters_file_dir):
+        _write_json({}, hyperparameters_file_dir)
 
-    resources_dict = {
-        "current_host": host_name,
-        "hosts":        [host_name]
-    }
-    _write_json(resources_dict, resource_config_file_dir)
+    if not os.path.exists(input_data_config_file_dir):
+        input_data_config_dict = {channel: {} for channel in os.listdir(_input_data_dir)}
+        _write_json(input_data_config_dict, input_data_config_file_dir)
+
+    if not os.path.exists(output_data_dir):
+        host_name = socket.gethostname()
+
+        resources_dict = {
+            "current_host": host_name,
+            "hosts":        [host_name]
+        }
+        _write_json(resources_dict, output_data_dir)
 
 
 if not _is_path_configured:
