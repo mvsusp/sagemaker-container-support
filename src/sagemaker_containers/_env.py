@@ -153,6 +153,9 @@ def _create_training_directories():
     if not os.path.exists(output_data_dir):
         os.makedirs(output_data_dir)
 
+    if not os.path.exists(_input_data_dir):
+        os.makedirs(_input_data_dir)
+
     if not os.path.exists(hyperparameters_file_dir):
         _write_json({}, hyperparameters_file_dir)
 
