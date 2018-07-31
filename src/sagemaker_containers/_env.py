@@ -147,7 +147,9 @@ def _create_training_directories():
     os.makedirs(output_data_dir)
 
     _write_json({}, hyperparameters_file_dir)
-    _write_json({}, input_data_config_file_dir)
+
+    input_data_config_dict = {channel: {} for channel in os.listdir(_input_data_dir)}
+    _write_json(input_data_config_dict, input_data_config_file_dir)
 
     host_name = socket.gethostname()
 
