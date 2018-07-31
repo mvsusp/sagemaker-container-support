@@ -167,7 +167,7 @@ def _create_training_directories():
             "current_host": host_name,
             "hosts":        [host_name]
         }
-        _write_json(resources_dict, output_data_dir)
+        _write_json(resources_dict, resource_config_file_dir)
 
 
 if not _is_path_configured:
