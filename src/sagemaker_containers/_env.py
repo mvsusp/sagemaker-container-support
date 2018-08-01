@@ -158,9 +158,9 @@ def _create_training_directories():
         os.makedirs(_input_data_dir)
 
     if not os.path.exists(hyperparameters_file_dir):
-        script_args = argparse.ArgumentParser().parse_known_args() or []
+        _, argv = argparse.ArgumentParser().parse_known_args() or []
 
-        hyperparameters = {k[2:] if len(k) > 2 else k[1:]: v for k, v in script_args.items()}
+        hyperparameters = {k[2:] if len(k) > 2 else k[1:]: v for k, v in argv.items()}
 
         _write_json(hyperparameters, hyperparameters_file_dir)
 
