@@ -235,6 +235,7 @@ def _check_error(cmd, error_class, **kwargs):
 
     while return_code is None:
         stdout = process.stdout.readline().decode("utf-8")
+        print('+')
         sys.stdout.write(stdout)
         return_code = process.poll()
 
