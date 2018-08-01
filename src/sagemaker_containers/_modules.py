@@ -13,6 +13,7 @@
 from __future__ import absolute_import
 
 import importlib
+from fcntl import fcntl, F_GETFL, F_SETFL
 import os
 import shlex
 import subprocess
@@ -229,31 +230,36 @@ def run(module_name, args=None, env_vars=None):  # type: (str, list, dict) -> No
 
 
 def _check_error(cmd, error_class, **kwargs):
-    process = subprocess.Popen(cmd, stderr=subprocess.PIPE, env=os.environ, **kwargs)
-    stdout, stderr = process.communicate()
+    process = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=os.environ, **kwargs)
 
-    return_code = process.poll()
-    if return_code:
+    return_code = None
+
+    # Get the current flags for the  stderr file descriptor
+    # And add the NONBLOCK flag to allow us to read even if there is no data.
+    # Since usually stderr will be empty unless there is an error.
+    flags = fcntl(process.stderr, F_GETFL)  # get current process.stderr flags
+    fcntl(process.stderr, F_SETFL, flags | os.O_NONBLOCK)
+
+    while return_code is None:
+        stdout = process.stdout.readline().decode("utf-8")
+
+        sys.stdout.write(stdout)
+        return_code = process.poll()
+        try:
+            stderr = process.stderr.readline().decode("utf-8")
+            sys.stdout.write(stderr)
+        except IOError:
+            # If there is nothing to read on stderr we will get an IOError
+            # this is fine.
+            pass
+
+    process.stdout.close()
+    if return_code != 0:
+        stderr = process.stderr.read()
+        process.stderr.close()
         raise error_class(return_code=return_code, cmd=' '.join(cmd), output=stderr)
-#
-# def _check_error(cmd, error_class, **kwargs):
-#     process = subprocess.Popen(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=os.environ, **kwargs)
-#
-#     return_code = None
-#
-#     while return_code is None:
-#         stdout = process.stdout.readline().decode("utf-8")
-#         print('+')
-#         sys.stdout.write(stdout)
-#         return_code = process.poll()
-#
-#     process.stdout.close()
-#     if return_code != 0:
-#         stderr = process.stderr.read()
-#         process.stderr.close()
-#         raise error_class(return_code=return_code, cmd=' '.join(cmd), output=stderr)
-#
-#     return return_code
+
+    return return_code
 
 
 def python_executable():
