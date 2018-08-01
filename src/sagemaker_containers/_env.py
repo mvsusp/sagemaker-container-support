@@ -160,7 +160,16 @@ def _create_training_directories():
     if not os.path.exists(hyperparameters_file_dir):
         _, argv = argparse.ArgumentParser().parse_known_args() or []
 
-        hyperparameters = {k[2:] if len(k) > 2 else k[1:]: v for k, v in argv}
+        script_arguments, script_values = argv[::2], argv[1::2]
+
+        any_argument_does_not_start_with_dashes = any(not argument.startswith('-') for argument in script_arguments)
+
+        if any_argument_does_not_start_with_dashes or len(script_arguments) != len(script_values):
+            raise ValueError('The script arguments must be key value pairs, %s does not match the requirement' % argv)
+
+        arguments_without_dashes = [arg[1:] if len(arg) == 2 else arg[2:] for arg in script_arguments]
+
+        hyperparameters = dict(zip(arguments_without_dashes, script_values))
 
         _write_json(hyperparameters, hyperparameters_file_dir)
 
