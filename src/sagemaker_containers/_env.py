@@ -160,7 +160,7 @@ def _create_training_directories():
     if not os.path.exists(hyperparameters_file_dir):
         _, argv = argparse.ArgumentParser().parse_known_args() or []
 
-        hyperparameters = {k[2:] if len(k) > 2 else k[1:]: v for k, v in argv.items()}
+        hyperparameters = {k[2:] if len(k) > 2 else k[1:]: v for k, v in argv}
 
         _write_json(hyperparameters, hyperparameters_file_dir)
 
