@@ -12,6 +12,7 @@
 # language governing permissions and limitations under the License.
 from __future__ import absolute_import
 
+import argparse
 from distutils import util
 import json
 import logging
@@ -157,7 +158,11 @@ def _create_training_directories():
         os.makedirs(_input_data_dir)
 
     if not os.path.exists(hyperparameters_file_dir):
-        _write_json({}, hyperparameters_file_dir)
+        script_args = argparse.ArgumentParser().parse_known_args() or []
+
+        hyperparameters = {k[2:] if len(k) > 2 else k[1:]: v for k, v in script_args.items()}
+
+        _write_json(hyperparameters, hyperparameters_file_dir)
 
     if not os.path.exists(input_data_config_file_dir):
         input_data_config_dict = {channel: {} for channel in os.listdir(_input_data_dir)}
