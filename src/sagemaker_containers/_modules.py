@@ -230,11 +230,15 @@ def run(module_name, args=None, env_vars=None):  # type: (str, list, dict) -> No
 
 def _check_error(cmd, error_class, **kwargs):
     process = subprocess.Popen(cmd, stderr=subprocess.PIPE, env=os.environ, **kwargs)
-    stdout, stderr = process.communicate()
 
-    return_code = process.poll()
-    if return_code:
-        raise error_class(return_code=return_code, cmd=' '.join(cmd), output=stderr)
+    while True:
+        return_code = process.returncode
+        if return_code == 0:
+            return
+        elif return_code:
+            raise error_class(return_code=return_code, cmd=' '.join(cmd), output=process.stderr.read())
+
+        process.poll()
 
 
 def python_executable():
