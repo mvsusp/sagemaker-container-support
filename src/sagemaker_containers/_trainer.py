@@ -42,7 +42,16 @@ def train():
         # if the framework module is not defined.
         env = sagemaker_containers.training_env()
 
-        if ':' in env.framework_module:
+        script_mode = ':' not in env.framework_module
+
+        if script_mode:
+            env_vars = env.to_env_vars()
+
+            _modules.write_env_vars(env_vars)
+
+            _modules.run(env.framework_module, env.to_cmd_args(), env_vars)
+
+        else:
 
             framework_name, entry_point_name = env.framework_module.split(':')
 
@@ -57,12 +66,6 @@ def train():
             entry_point = getattr(framework, entry_point_name)
 
             entry_point()
-        else:
-            env_vars = env.to_env_vars()
-
-            _modules.write_env_vars(env_vars)
-
-            return _modules.run(env.framework_module, env.to_cmd_args(), env_vars)
 
         logger.info('Reporting training SUCCESS')
         _files.write_success_file()
