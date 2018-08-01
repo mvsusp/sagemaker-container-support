@@ -47,6 +47,8 @@ def train():
         if script_mode:
             env_vars = env.to_env_vars()
 
+            _logging.configure_logger(env.log_level)
+
             _modules.write_env_vars(env_vars)
 
             _modules.run(env.framework_module, env.to_cmd_args(), env_vars)
