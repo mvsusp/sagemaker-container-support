@@ -67,3 +67,11 @@ $ mpirun -np 16 \
     -mca pml ob1 -mca btl ^openib \
     python train.py
 ```
+
+### Suggested solution - provide sm-mpirun operator
+
+```bash
+$ sm-mpirun --help
+
+sm-mpirun 
+```
