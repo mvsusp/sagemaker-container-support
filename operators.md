@@ -73,5 +73,9 @@ $ mpirun -np 16 \
 ```bash
 $ sm-mpirun --help
 
-sm-mpirun 
+sm-mpirun - sagemaker operator for mpirun
+
+Usage: sm-mpirun [args] invokes mpi run with hostnames configured and best settings
+
+Examples: sm-mpirun
 ```
