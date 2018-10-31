@@ -223,3 +223,10 @@ FROM sagemaker-horovod-container
 COPY my-training.py train.py
 ```
 
+References:
+
+https://github.com/kubeflow/mpi-operator
+https://github.com/kubeflow/mpi-operator/blob/master/Dockerfile#L23
+https://github.com/tensorflow/ecosystem/blob/2cbd6579a844cff4e8155ccfcfa80bb696e4e28c/distribution_strategy/tf_std_server.py
+https://github.com/tensorflow/ecosystem/blob/2cbd6579a844cff4e8155ccfcfa80bb696e4e28c/distribution_strategy/Dockerfile.tf_std_server
+https://cloud.google.com/ml-engine/reference/rest/v1/projects.jobs#TrainingInput
