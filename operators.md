@@ -1,1 +1,64 @@
 
+# SageMaker Operators
+
+## Open MPI operator
+
+### use cases
+
+#### 1. Horovod
+Extracted from https://github.com/uber/horovod/blob/master/README.md#running-horovod.
+
+1. To run on a machine with 4 GPUs:
+
+```bash
+$ mpirun -np 4 \
+    -H localhost:4 \
+    -bind-to none -map-by slot \
+    -x NCCL_DEBUG=INFO -x LD_LIBRARY_PATH -x PATH \
+    -mca pml ob1 -mca btl ^openib \
+    python train.py
+```
+
+2. To run on 4 machines with 4 GPUs each:
+
+```bash
+$ mpirun -np 16 \
+    -H server1:4,server2:4,server3:4,server4:4 \
+    -bind-to none -map-by slot \
+    -x NCCL_DEBUG=INFO -x LD_LIBRARY_PATH -x PATH \
+    -mca pml ob1 -mca btl ^openib \
+    python train.py
+```
+
+** generic bash solution for SageMaker
+
+```bash
+$ mpirun -np 4 \
+    -H $SM_CURRENT_HOST:$SM_NUM_GPUS \
+    -bind-to none -map-by slot \
+    -x NCCL_DEBUG=INFO -x LD_LIBRARY_PATH -x PATH \
+    -mca pml ob1 -mca btl ^openib \
+    python train.py
+```
+
+```bash
+
+HOSTS_AND_GPUS=$(python <<EOF
+import os
+import json
+
+hosts = json.loads(os.environ['SM_HOSTS'])
+num_gpus = os.environ['SM_NUM_GPUS']
+hosts_per_gpu = [host + ':' + num_gpus for host in hosts].join(',')
+
+print(hosts_per_gpu)
+EOF
+)
+
+$ mpirun -np 16 \
+    -H ${HOSTS_AND_GPUS} \
+    -bind-to none -map-by slot \
+    -x NCCL_DEBUG=INFO -x LD_LIBRARY_PATH -x PATH \
+    -mca pml ob1 -mca btl ^openib \
+    python train.py
+```
