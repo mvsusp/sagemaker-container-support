@@ -30,7 +30,9 @@ $ mpirun -np 16 \
     python train.py
 ```
 
-** generic bash solution for SageMaker
+**generic bash solution for SageMaker**
+
+The first example, using only one instance works fine by just using [our SageMaker Env Variables](https://github.com/mvsusp/sagemaker-containers/tree/master#sm_hosts):
 
 ```bash
 $ mpirun -np 4 \
@@ -40,6 +42,9 @@ $ mpirun -np 4 \
     -mca pml ob1 -mca btl ^openib \
     python train.py
 ```
+The second example does not work so well. The script below would not even work given that:
+- it should be executed only in one instance
+- all other instances should wait the script to finish
 
 ```bash
 
