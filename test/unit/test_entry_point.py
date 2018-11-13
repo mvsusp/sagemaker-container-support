@@ -63,7 +63,7 @@ def patch_tmpdir():
 @patch('subprocess.Popen', lambda *args, **kwargs: MagicMock(wait=MagicMock(return_value=32)))
 def test_call_error():
     with pytest.raises(_errors.ExecuteUserScriptError) as e:
-        entry_point.call('wrong module')
+        entry_point.run('wrong module')
 
     message = str(e.value)
     assert 'ExecuteUserScriptError:' in message
@@ -77,23 +77,23 @@ def test_python_executable_exception():
 
 @patch('sagemaker_containers.training_env', lambda: {})
 def test_call():
-    entry_point.call('pytest', ['--version'])
+    entry_point.run('pytest', ['--version'])
 
 
 @patch('sagemaker_containers._files.download_and_extract')
-@patch('sagemaker_containers.entry_point.call')
+@patch('sagemaker_containers.entry_point.run')
 def test_run_wait(call, download_and_extract):
-    entry_point.run('train.py', uri='s3://url', args=['42'])
+    entry_point.run_from_uri('train.py', uri='s3://url', args=['42'])
 
     download_and_extract.assert_called_with('train.py', 's3://url', _env.code_dir)
     call.assert_called_with('train.py', ['42'], {}, True)
 
 
 @patch('sagemaker_containers._files.download_and_extract')
-@patch('sagemaker_containers.entry_point.call')
+@patch('sagemaker_containers.entry_point.run')
 @patch('os.chmod')
 def test_run_no_wait(chmod, call, download_and_extract):
-    entry_point.run('launcher.sh', uri='s3://url', args=['42'], wait=False)
+    entry_point.run_from_uri('launcher.sh', uri='s3://url', args=['42'], wait=False)
 
     download_and_extract.assert_called_with('launcher.sh', 's3://url', _env.code_dir)
     call.assert_called_with('launcher.sh', ['42'], {}, False)

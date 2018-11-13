@@ -43,7 +43,7 @@ def test_run_error():
     assert 'ExecuteUserScriptError:' in message
 
 
-@patch('sagemaker_containers.entry_point.call')
+@patch('sagemaker_containers.entry_point.run')
 def test_run(call):
     with pytest.warns(DeprecationWarning):
         _modules.run('pytest', ['--version'], {'PYTHONPATH': '1'}, False)
@@ -51,7 +51,7 @@ def test_run(call):
 
 
 @pytest.mark.parametrize('wait,cache', [[True, False], [True, False]])
-@patch('sagemaker_containers.entry_point.run')
+@patch('sagemaker_containers.entry_point.run_from_uri')
 def test_run_module_wait(run, wait, cache):
     with pytest.warns(DeprecationWarning):
         _modules.run_module(uri='s3://url', args=['42'], wait=wait, cache=cache)

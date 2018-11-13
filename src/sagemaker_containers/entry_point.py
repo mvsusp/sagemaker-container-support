@@ -55,7 +55,7 @@ def install_requirements(path):  # type: (str) -> None
         _check_error(cmd, _errors.InstallModuleError, cwd=path)
 
 
-def run(name, uri, args, env_vars=None, wait=True):
+def run_from_uri(name, uri, args, env_vars=None, wait=True):
     # type: (str, str, list, dict, bool) -> subprocess.Popen
     """Download, prepare and executes a compressed tar file from S3 or provided directory as a module.
 
@@ -77,7 +77,7 @@ def run(name, uri, args, env_vars=None, wait=True):
 
     _env.write_env_vars(env_vars)
 
-    return call(name, args, env_vars, wait)
+    return run(name, args, env_vars, wait)
 
 
 def download_and_install(name, uri, dst):
@@ -109,7 +109,7 @@ def install(path):  # type: (str) -> None
     _check_error(shlex.split(cmd), _errors.InstallModuleError, cwd=path)
 
 
-def call(name, args=None, env_vars=None, wait=True):  # type: (str, list, dict, bool) -> subprocess.Popen
+def run(name, args=None, env_vars=None, wait=True):  # type: (str, list, dict, bool) -> subprocess.Popen
     """Run Python module as a script.
 
     Search sys.path for the named module and execute its contents as the __main__ module.

@@ -92,9 +92,9 @@ def run(module_name, args=None, env_vars=None, wait=True):  # type: (str, list, 
         args (list):  A list of program arguments.
         env_vars (dict): A map containing the environment variables to be written.
     """
-    msg = 'run is now deprecated and will be removed in the future. Use entry_point.call instead'
+    msg = 'run is now deprecated and will be removed in the future. Use entry_point.run instead'
     warnings.warn(msg, DeprecationWarning)
-    return entry_point.call(_user_program_name(module_name), args, env_vars, wait)
+    return entry_point.run(_user_program_name(module_name), args, env_vars, wait)
 
 
 def import_module(uri, name=DEFAULT_MODULE_NAME, cache=None):  # type: (str, str, bool) -> module
@@ -138,9 +138,9 @@ def run_module(uri, args, env_vars=None, name=DEFAULT_MODULE_NAME, cache=True, w
                      otherwise it will launch the user module with subprocess and return the process object.
     """
     _warning_cache_deprecation(cache)
-    msg = 'run_module is now deprecated and will be removed in the future. Use entry_point.run instead'
+    msg = 'run_module is now deprecated and will be removed in the future. Use entry_point.run_from_uri instead'
     warnings.warn(msg, DeprecationWarning)
-    return entry_point.run(uri=uri, args=args, env_vars=env_vars, name=_user_program_name(name), wait=wait)
+    return entry_point.run_from_uri(uri=uri, args=args, env_vars=env_vars, name=_user_program_name(name), wait=wait)
 
 
 def _user_program_name(name):
