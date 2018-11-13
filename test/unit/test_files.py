@@ -14,11 +14,11 @@ import itertools
 import logging
 import os
 
-from mock import mock_open, patch
+from mock import call, mock_open, patch
 import pytest
 import six
 
-from sagemaker_containers import _env, _files
+from sagemaker_containers import _env, _files, _params
 import test
 
 builtins_open = '__builtin__.open' if six.PY2 else 'builtins.open'
@@ -101,3 +101,46 @@ def test_write_failure_file():
     _files.write_failure_file(failure_msg)
     open.assert_called_with(file_path, 'w')
     open().write.assert_called_with(failure_msg)
+
+
+@patch('boto3.resource', autospec=True)
+@pytest.mark.parametrize('url,bucket_name,key,dst',
+                         [('S3://my-bucket/path/to/my-file', 'my-bucket', 'path/to/my-file', '/tmp/my-file'),
+                          ('s3://my-bucket/my-file', 'my-bucket', 'my-file', '/tmp/my-file')])
+def test_s3_download(resource, url, bucket_name, key, dst):
+    region = 'us-west-2'
+    os.environ[_params.REGION_NAME_ENV] = region
+
+    _files.s3_download(url, dst)
+
+    chain = call('s3', region_name=region).Bucket(bucket_name).download_file(key, dst)
+    assert resource.mock_calls == chain.call_list()
+
+
+def test_s3_download_wrong_scheme():
+    with pytest.raises(ValueError, message="Expecting 's3' scheme, got: c in c://my-bucket/my-file"):
+        _files.s3_download('c://my-bucket/my-file', '/tmp/file')
+
+
+@patch('sagemaker_containers._files.s3_download')
+@patch('os.path.isdir', lambda x: True)
+@patch('shutil.rmtree')
+@patch('shutil.copytree')
+def test_download_and_and_extract_source_dir(copy, rmtree, s3_download):
+    uri = _env.channel_path('code')
+    _files.download_and_extract('train.sh', uri, _env.code_dir)
+
+    s3_download.assert_not_called()
+    rmtree.assert_called_with(_env.code_dir)
+    copy.assert_called_with(uri, _env.code_dir)
+
+
+@patch('sagemaker_containers._files.s3_download')
+@patch('os.path.isdir', lambda x: False)
+@patch('shutil.copy2')
+def test_download_and_and_extract_file(copy, s3_download):
+    uri = _env.channel_path('code')
+    _files.download_and_extract('train.sh', uri, _env.code_dir)
+
+    s3_download.assert_not_called()
+    copy.assert_called_with(uri, os.path.join(_env.code_dir, 'train.sh'))

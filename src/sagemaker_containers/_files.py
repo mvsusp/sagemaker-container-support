@@ -16,9 +16,13 @@ import contextlib
 import json
 import os
 import shutil
+import tarfile
 import tempfile
 
-from sagemaker_containers import _env
+import boto3
+from six.moves.urllib.parse import urlparse
+
+from sagemaker_containers import _env, _params
 
 
 def write_success_file():  # type: () -> None
@@ -86,3 +90,55 @@ def read_json(path):  # type: (str) -> dict
     """
     with open(path, 'r') as f:
         return json.load(f)
+
+
+def s3_download(url, dst):  # type: (str, str) -> None
+    """Download a file from S3.
+
+    Args:
+        url (str): the s3 url of the file.
+        dst (str): the destination where the file will be saved.
+    """
+    url = urlparse(url)
+
+    if url.scheme != 's3':
+        raise ValueError("Expecting 's3' scheme, got: %s in %s" % (url.scheme, url))
+
+    bucket, key = url.netloc, url.path.lstrip('/')
+
+    region = os.environ.get('AWS_REGION', os.environ.get(_params.REGION_NAME_ENV))
+    s3 = boto3.resource('s3', region_name=region)
+
+    s3.Bucket(bucket).download_file(key, dst)
+
+
+def download_and_extract(name, uri, path):  # type: (str, str, str) -> None
+    """Download, prepare and install a compressed tar file from S3 or local directory as a module.
+
+    SageMaker Python SDK saves the user provided scripts as compressed tar files in S3
+    https://github.com/aws/sagemaker-python-sdk.
+
+    This function downloads this compressed file, if provided, and transforms it as a module, and installs it.
+
+    Args:
+        uri (str): the location of the module.
+
+    Returns:
+        (module): the imported module
+    """
+    if uri.startswith('s3://'):
+        with tmpdir() as tmp:
+
+            dst = os.path.join(tmp, 'tar_file')
+            s3_download(uri, dst)
+
+            with tarfile.open(name=dst, mode='r:gz') as t:
+                t.extractall(path=path)
+    else:
+        if os.path.isdir(uri):
+            if os.path.exists(path):
+                shutil.rmtree(path)
+
+            shutil.copytree(uri, path)
+        else:
+            shutil.copy2(uri, os.path.join(path, name))

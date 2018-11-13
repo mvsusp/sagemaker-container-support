@@ -43,6 +43,7 @@ def create_base_path():
     shutil.rmtree(os.environ[_env.BASE_PATH_ENV])
 
     os.makedirs(_env.model_dir)
+    os.makedirs(_env.code_dir)
     os.makedirs(_env.input_config_dir)
     os.makedirs(_env.output_data_dir)
 

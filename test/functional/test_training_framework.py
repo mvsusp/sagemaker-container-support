@@ -17,6 +17,8 @@ import importlib
 import os
 import shlex
 import subprocess
+import sys
+import textwrap
 
 import numpy as np
 import pytest
@@ -27,6 +29,11 @@ import test
 from test import fake_ml_framework
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
+
+
+@pytest.fixture(autouse=True)
+def install_test_framework():
+    sys.path.insert(0, os.path.dirname(dir_path))
 
 
 @pytest.fixture(autouse=True)
@@ -88,7 +95,7 @@ def train(channel_input_dirs, hyperparameters):
 USER_MODE_SCRIPT = """
 import argparse
 import os
-import test.fake_ml_framework as fake_ml
+import fake_ml_framework as fake_ml
 import numpy as np
 
 parser = argparse.ArgumentParser()
@@ -227,8 +234,9 @@ def test_trainer_report_failure():
 def framework_training_with_script_mode_fn():
     training_env = sagemaker_containers.training_env()
 
-    modules.run_module(training_env.module_dir, training_env.to_cmd_args(), training_env.to_env_vars(),
-                       training_env.module_name, cache=False)
+    with pytest.warns(DeprecationWarning):
+        modules.run_module(training_env.module_dir, training_env.to_cmd_args(), training_env.to_env_vars(),
+                           training_env.module_name, cache=False)
 
 
 def test_parameter_server():
@@ -244,15 +252,54 @@ def test_parameter_server():
     process.kill()
 
 
-@pytest.mark.parametrize('user_script', [USER_MODE_SCRIPT])
-def test_script_mode(user_script):
+def test_script_mode_with_python_script():
     channel = test.Channel.create(name='training')
 
     features = [1, 2, 3, 4]
     labels = [0, 1, 0, 1]
     np.savez(os.path.join(channel.path, 'training_data'), features=features, labels=labels)
 
-    module = test.UserModule(test.File(name='user_script.py', data=user_script))
+    test_framework_path = os.path.join(dir_path, '..', 'fake_ml_framework.py')
+    user_script = test.File(name='user_script.py', data=USER_MODE_SCRIPT)
+    module = test.UserModule(user_script).add_local_file(test_framework_path)
+
+    hyperparameters = dict(training_data_file=os.path.join(channel.path, 'training_data.npz'),
+                           sagemaker_program='user_script.py', epochs=10, batch_size=64, model_dir=env.model_dir)
+
+    test.prepare(user_module=module, hyperparameters=hyperparameters, channels=[channel])
+
+    assert execute_an_wrap_exit(framework_training_with_script_mode_fn) == trainer.SUCCESS_CODE
+
+    model_path = os.path.join(env.model_dir, 'saved_model')
+
+    model = fake_ml_framework.Model.load(model_path)
+
+    assert model.epochs == 10
+    assert model.batch_size == 64
+    assert model.loss == 'elastic'
+    assert model.optimizer == 'SGD'
+
+
+def test_script_mode_with_python_module():
+    channel = test.Channel.create(name='training')
+
+    features = [1, 2, 3, 4]
+    labels = [0, 1, 0, 1]
+    np.savez(os.path.join(channel.path, 'training_data'), features=features, labels=labels)
+
+    data = textwrap.dedent("""
+    from setuptools import setup
+    setup(packages=[''],
+          name="user_script",
+          version='1.0.0',
+          include_package_data=True)
+    """)
+
+    setup = test.File('setup.py', data)
+
+    test_framework_path = os.path.join(dir_path, '..', 'fake_ml_framework.py')
+    user_script = test.File(name='user_script.py', data=USER_MODE_SCRIPT)
+    module = test.UserModule(user_script).add_local_file(test_framework_path).add_file(setup)
 
     hyperparameters = dict(training_data_file=os.path.join(channel.path, 'training_data.npz'),
                            sagemaker_program='user_script.py', epochs=10, batch_size=64, model_dir=env.model_dir)

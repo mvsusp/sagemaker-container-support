@@ -42,15 +42,14 @@ def erase_user_module():
 def test_import_module(user_module_name):
     user_module = test.UserModule(USER_SCRIPT).add_file(SETUP).upload()
 
-    module = modules.import_module(user_module.url, user_module_name, cache=False)
+    module = modules.import_module(user_module.url, user_module_name)
 
     assert module.validate()
 
 
 def test_import_module_with_s3_script(user_module_name):
     user_module = test.UserModule(USER_SCRIPT).upload()
-
-    module = modules.import_module(user_module.url, user_module_name, cache=False)
+    module = modules.import_module(user_module.url, user_module_name)
 
     assert module.validate()
 
@@ -60,7 +59,7 @@ def test_import_module_with_local_script(user_module_name, tmpdir):
 
     test.UserModule(USER_SCRIPT).create_tmp_dir_with_files(tmp_code_dir)
 
-    module = modules.import_module(tmp_code_dir, user_module_name, cache=False)
+    module = modules.import_module(tmp_code_dir, user_module_name)
 
     assert module.validate()
 

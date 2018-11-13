@@ -162,6 +162,14 @@ if not _is_path_configured:
     _create_training_directories()
 
 
+def _create_code_dir():  # type: () -> None
+    if not os.path.exists(code_dir):
+        os.makedirs(code_dir)
+
+
+_create_code_dir()
+
+
 def _read_json(path):  # type: (str) -> dict
     """Read a JSON file.
 
@@ -534,9 +542,11 @@ class TrainingEnv(_Env):
         self._channel_input_dirs = {channel: channel_path(channel) for channel in input_data_config}
         self._current_host = current_host
 
+        self._user_program = sagemaker_hyperparameters.get(_params.USER_PROGRAM_PARAM)
+
         # override base class attributes
         if self._module_name is None:
-            self._module_name = str(sagemaker_hyperparameters.get(_params.USER_PROGRAM_PARAM, None))
+            self._module_name = self._user_program
         self._module_dir = str(sagemaker_hyperparameters.get(_params.SUBMIT_DIR_PARAM, code_dir))
         self._log_level = sagemaker_hyperparameters.get(_params.LOG_LEVEL_PARAM, logging.INFO)
         self._framework_module = os.environ.get(_params.FRAMEWORK_TRAINING_MODULE_ENV, None)
@@ -545,6 +555,10 @@ class TrainingEnv(_Env):
         self._input_config_dir = input_config_dir
         self._output_dir = output_dir
         self._job_name = os.environ.get(_params.TRAINING_JOB_ENV.upper(), None)
+
+    @property
+    def user_program(self):  # type: () -> str
+        return self._user_program
 
     @property
     def job_name(self):  # type: () -> str
@@ -584,7 +598,7 @@ class TrainingEnv(_Env):
 
         env = {
             'hosts':            self.hosts, 'network_interface_name': self.network_interface_name,
-            'hps':              self.hyperparameters,
+            'hps':              self.hyperparameters, 'user_program': self.user_program,
             'framework_params': self.additional_framework_parameters,
             'resource_config':  self.resource_config, 'input_data_config': self.input_data_config,
             'output_data_dir':  self.output_data_dir, 'channels': sorted(self.channel_input_dirs.keys()),
@@ -819,3 +833,18 @@ class ServingEnv(_Env):
             str: The desired MIME type of the inference in the response. For example: application/json.
                 Default: application/json"""
         return self._default_accept
+
+
+def write_env_vars(env_vars=None):  # type: (dict) -> None
+    """Write the dictionary env_vars in the system, as environment variables.
+
+    Args:
+        env_vars ():
+
+    Returns:
+
+    """
+    env_vars = env_vars or {}
+
+    for name, value in env_vars.items():
+        os.environ[name] = value

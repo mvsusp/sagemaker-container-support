@@ -57,7 +57,7 @@ def write_json(obj, path):  # type: (object, str) -> None
 
 
 def prepare(user_module, hyperparameters, channels, current_host='algo-1', hosts=None, local=False):
-    # type: (UserModule, dict, list, str, list) -> None
+    # type: (UserModule, dict, list, str, list, bool) -> None
     hosts = hosts or ['algo-1']
 
     if not local:
@@ -148,6 +148,13 @@ class UserModule(object):
         self._files.append(file)
         return self
 
+    def add_local_file(self, path):
+        file_name = os.path.basename(path)
+        with open(path) as f:
+            file = File(file_name, f.read())
+            self._files.append(file)
+            return self
+
     @property
     def url(self):  # type: () -> str
         return os.path.join('s3://', self.bucket, self.key)
@@ -184,9 +191,9 @@ class UserModule(object):
                 f.write(data)
 
 
-class Channel(collections.namedtuple('Channel', ['name', 'config'])):  # type: (str, dict) -> Channel
+class Channel(collections.namedtuple('Channel', ['name', 'config'])):
 
-    def __new__(cls, name, config=None):
+    def __new__(cls, name, config=None):  # type: (str, dict) -> Channel
         config = DEFAULT_CONFIG.copy().update(config or {})
         return super(Channel, cls).__new__(cls, name=name, config=config)
 

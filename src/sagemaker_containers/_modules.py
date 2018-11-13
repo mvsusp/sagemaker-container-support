@@ -13,107 +13,17 @@
 from __future__ import absolute_import
 
 import importlib
-import os
-import shlex
-import subprocess
+import subprocess  # noqa: F401 imported but unused
 import sys
-import tarfile
-import textwrap
+import warnings
 
-import boto3
 import six
-from six.moves.urllib.parse import urlparse
 
-from sagemaker_containers import _errors, _files, _logging, _params
+from sagemaker_containers import _env, _errors, _logging, entry_point
 
 logger = _logging.get_logger()
 
 DEFAULT_MODULE_NAME = 'default_user_module_name'
-
-
-def s3_download(url, dst):  # type: (str, str) -> None
-    """Download a file from S3.
-
-    Args:
-        url (str): the s3 url of the file.
-        dst (str): the destination where the file will be saved.
-    """
-    url = urlparse(url)
-
-    if url.scheme != 's3':
-        raise ValueError("Expecting 's3' scheme, got: %s in %s" % (url.scheme, url))
-
-    bucket, key = url.netloc, url.path.lstrip('/')
-
-    region = os.environ.get('AWS_REGION', os.environ.get(_params.REGION_NAME_ENV))
-    s3 = boto3.resource('s3', region_name=region)
-
-    s3.Bucket(bucket).download_file(key, dst)
-
-
-def prepare(path, name):  # type: (str, str) -> None
-    """Prepare a Python script (or module) to be imported as a module.
-
-    If the script does not contain a setup.py file, it creates a minimal setup.
-
-    Args:
-        path (str): path to directory with the script or module.
-        name (str): name of the script or module.
-    """
-    setup_path = os.path.join(path, 'setup.py')
-    if not os.path.exists(setup_path):
-        data = textwrap.dedent("""
-        from setuptools import setup
-
-        setup(packages=[''],
-              name="%s",
-              version='1.0.0',
-              include_package_data=True)
-        """ % name)
-
-        logger.info('Module %s does not provide a setup.py. \nGenerating setup.py' % name)
-
-        _files.write_file(setup_path, data)
-
-        data = textwrap.dedent("""
-        [wheel]
-        universal = 1
-        """)
-
-        logger.info('Generating setup.cfg')
-
-        _files.write_file(os.path.join(path, 'setup.cfg'), data)
-
-        data = textwrap.dedent("""
-        recursive-include . *
-
-        recursive-exclude . __pycache__*
-        recursive-exclude . *.pyc
-        recursive-exclude . *.pyo
-        """)
-
-        logger.info('Generating MANIFEST.in')
-
-        _files.write_file(os.path.join(path, 'MANIFEST.in'), data)
-
-
-def install(path):  # type: (str) -> None
-    """Install a Python module in the executing Python environment.
-
-    Args:
-        path (str):  Real path location of the Python module.
-    """
-    if not sys.executable:
-        raise RuntimeError('Failed to retrieve the real path for the Python executable binary')
-
-    cmd = '%s -m pip install -U . ' % python_executable()
-
-    if os.path.exists(os.path.join(path, 'requirements.txt')):
-        cmd += '-r requirements.txt'
-
-    logger.info('Installing module with the following command:\n%s', cmd)
-
-    _check_error(shlex.split(cmd), _errors.InstallModuleError, cwd=path)
 
 
 def exists(name):  # type: (str) -> bool
@@ -131,44 +41,6 @@ def exists(name):  # type: (str) -> bool
         return False
     else:
         return True
-
-
-def download_and_install(uri, name=DEFAULT_MODULE_NAME, cache=True):
-    # type: (str, str, bool) -> module
-    """Download, prepare and install a compressed tar file from S3 or local directory as a module.
-
-    SageMaker Python SDK saves the user provided scripts as compressed tar files in S3
-    https://github.com/aws/sagemaker-python-sdk.
-
-    This function downloads this compressed file, if provided, and transforms it as a module, and installs it.
-
-    Args:
-        name (str): name of the script or module.
-        uri (str): the location of the module.
-        cache (bool): default True. It will not download and install the module again if it is already installed.
-
-    Returns:
-        (module): the imported module
-    """
-    should_use_cache = cache and exists(name)
-
-    if not should_use_cache:
-        with _files.tmpdir() as tmpdir:
-            if uri.startswith('s3://'):
-                dst = os.path.join(tmpdir, 'tar_file')
-                s3_download(uri, dst)
-                module_path = os.path.join(tmpdir, 'module_dir')
-                os.makedirs(module_path)
-
-                with tarfile.open(name=dst, mode='r:gz') as t:
-                    t.extractall(path=module_path)
-
-            else:
-                module_path = uri
-
-            prepare(module_path, name)
-
-            install(module_path)
 
 
 def run(module_name, args=None, env_vars=None, wait=True):  # type: (str, list, dict, bool) -> Popen
@@ -220,45 +92,12 @@ def run(module_name, args=None, env_vars=None, wait=True):  # type: (str, list, 
         args (list):  A list of program arguments.
         env_vars (dict): A map containing the environment variables to be written.
     """
-    args = args or []
-    env_vars = env_vars or {}
-
-    cmd = [python_executable(), '-m', module_name] + args
-
-    _logging.log_script_invocation(cmd, env_vars)
-
-    if wait:
-        return _check_error(cmd, _errors.ExecuteUserScriptError)
-
-    else:
-        return _make_process(cmd)
+    msg = 'run is now deprecated and will be removed in the future. Use entry_point.call instead'
+    warnings.warn(msg, DeprecationWarning)
+    return entry_point.call(_user_program_name(module_name), args, env_vars, wait)
 
 
-def _make_process(cmd, **kwargs):
-    return subprocess.Popen(cmd, env=os.environ, **kwargs)
-
-
-def _check_error(cmd, error_class, **kwargs):
-    process = _make_process(cmd, **kwargs)
-    return_code = process.wait()
-
-    if return_code:
-        raise error_class(return_code=return_code, cmd=' '.join(cmd))
-    return process
-
-
-def python_executable():
-    """Returns the real path for the Python executable, if it exists. Returns RuntimeError otherwise.
-
-    Returns:
-        (str): the real path of the current Python executable
-    """
-    if not sys.executable:
-        raise RuntimeError('Failed to retrieve the real path for the Python executable binary')
-    return sys.executable
-
-
-def import_module(uri, name=DEFAULT_MODULE_NAME, cache=True):  # type: (str, str, bool) -> module
+def import_module(uri, name=DEFAULT_MODULE_NAME, cache=None):  # type: (str, str, bool) -> module
     """Download, prepare and install a compressed tar file from S3 or provided directory as a module.
     SageMaker Python SDK saves the user provided scripts as compressed tar files in S3
     https://github.com/aws/sagemaker-python-sdk.
@@ -270,7 +109,8 @@ def import_module(uri, name=DEFAULT_MODULE_NAME, cache=True):  # type: (str, str
     Returns:
         (module): the imported module
     """
-    download_and_install(uri, name, cache)
+    _warning_cache_deprecation(cache)
+    entry_point.download_and_install(name=_user_program_name(name), uri=uri, dst=_env.code_dir)
 
     try:
         module = importlib.import_module(name)
@@ -282,7 +122,7 @@ def import_module(uri, name=DEFAULT_MODULE_NAME, cache=True):  # type: (str, str
 
 
 def run_module(uri, args, env_vars=None, name=DEFAULT_MODULE_NAME, cache=True, wait=True):
-    # type: (str, list, dict, str, bool, bool) -> Popen
+    # type: (str, list, dict, str, bool, bool) -> subprocess.Popen
     """Download, prepare and executes a compressed tar file from S3 or provided directory as a module.
 
     SageMaker Python SDK saves the user provided scripts as compressed tar files in S3
@@ -297,26 +137,17 @@ def run_module(uri, args, env_vars=None, name=DEFAULT_MODULE_NAME, cache=True, w
         wait (bool): If True run_module will wait for the user module to exit and check the exit code,
                      otherwise it will launch the user module with subprocess and return the process object.
     """
-    env_vars = env_vars or {}
-    env_vars = env_vars.copy()
-
-    download_and_install(uri, name, cache)
-
-    write_env_vars(env_vars)
-
-    return run(name, args, env_vars, wait)
+    _warning_cache_deprecation(cache)
+    msg = 'run_module is now deprecated and will be removed in the future. Use entry_point.run instead'
+    warnings.warn(msg, DeprecationWarning)
+    return entry_point.run(uri=uri, args=args, env_vars=env_vars, name=_user_program_name(name), wait=wait)
 
 
-def write_env_vars(env_vars=None):  # type: (dict) -> None
-    """Write the dictionary env_vars in the system, as environment variables.
+def _user_program_name(name):
+    return "%s.py" % name
 
-    Args:
-        env_vars ():
 
-    Returns:
-
-    """
-    env_vars = env_vars or {}
-
-    for name, value in env_vars.items():
-        os.environ[name] = value
+def _warning_cache_deprecation(cache):
+    if cache is not None:
+        msg = 'the cache parameter is unnecessary anymore. Cache is always set to True'
+        warnings.warn(msg, DeprecationWarning)

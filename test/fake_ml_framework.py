@@ -10,10 +10,11 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
 # ANY KIND, either express or implied. See the License for the specific
 # language governing permissions and limitations under the License.
+import json
+
 import numpy as np
 
 from sagemaker_containers import _files
-import test
 
 
 class Model(object):
@@ -31,7 +32,8 @@ class Model(object):
         self.batch_size = batch_size
 
     def save(self, model_dir):
-        test.write_json(self.__dict__, model_dir)
+        with open(model_dir, 'w') as f:
+            json.dump(self.__dict__, f)
 
     @classmethod
     def load(cls, model_dir):
