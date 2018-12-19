@@ -111,7 +111,6 @@ def test_mpi_master_run(training_env, popen, policy, ssh_client):
             '-mca', 'btl_tcp_if_include', 'ethw3',
             '-mca', 'oob_tcp_if_include', 'ethw3',
             '-mca', 'plm_rsh_no_tree_spawn', '1',
-            '-bind-to', 'socket', '-map-by', 'slot',
             '-mca', 'pml', 'ob1',
             '-mca', 'btl', '^openib',
             '-mca', 'orte_abort_on_non_zero_status', '1',

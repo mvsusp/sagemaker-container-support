@@ -146,7 +146,6 @@ class MasterRunner(_process.ProcessRunner):
                    '-mca', 'btl_tcp_if_include', self._network_interface_name,
                    '-mca', 'oob_tcp_if_include', self._network_interface_name,
                    '-mca', 'plm_rsh_no_tree_spawn', '1',
-                   '-bind-to', 'socket', '-map-by', 'slot',
                    '-mca', 'pml', 'ob1', '-mca', 'btl', '^openib',
                    '-mca', 'orte_abort_on_non_zero_status', '1',
 
