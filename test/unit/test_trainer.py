@@ -44,7 +44,8 @@ class ScriptTrainingEnv(TrainingEnv):
 @patch('inotify_simple.INotify', MagicMock())
 @patch('importlib.import_module')
 @patch('sagemaker_containers.training_env', TrainingEnv)
-def test_train(import_module):
+@patch('boto3.client')
+def test_train(boto, import_module):
     framework = Mock()
     import_module.return_value = framework
     _trainer.train()
@@ -57,7 +58,8 @@ def test_train(import_module):
 @patch('importlib.import_module')
 @patch('sagemaker_containers.training_env', TrainingEnv)
 @patch('sagemaker_containers._trainer._exit_processes')
-def test_train_with_success(_exit, import_module):
+@patch('boto3.client')
+def test_train_with_success(boto, _exit, import_module):
     def success():
         pass
 
@@ -73,7 +75,8 @@ def test_train_with_success(_exit, import_module):
 @patch('importlib.import_module')
 @patch('sagemaker_containers.training_env', TrainingEnv)
 @patch('sagemaker_containers._trainer._exit_processes')
-def test_train_fails(_exit, import_module):
+@patch('boto3.client')
+def test_train_fails(boto, _exit, import_module):
 
     def fail():
         raise OSError(os.errno.ENOENT, 'No such file or directory')
