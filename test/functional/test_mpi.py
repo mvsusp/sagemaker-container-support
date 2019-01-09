@@ -15,7 +15,6 @@ import os
 import shutil
 import subprocess
 
-import pytest
 from sagemaker.estimator import Framework
 
 logging.basicConfig(level=logging.INFO)
@@ -31,8 +30,6 @@ class CustomEstimator(Framework):
         raise NotImplementedError('This methos is not supported.')
 
 
-@pytest.mark.skip(reason="waiting for local mode fix on  "
-                         "https://github.com/aws/sagemaker-python-sdk/pull/559")
 def test_mpi(tmpdir):
 
     estimator = CustomEstimator(entry_point='launcher.sh',
@@ -53,10 +50,7 @@ def test_mpi(tmpdir):
 def build_mpi_image(tmpdir):
     tmp = str(tmpdir)
 
-    subprocess.check_call(['python', 'setup.py', 'sdist'], cwd=root_dir)
-
-    for file in os.listdir(os.path.join(root_dir, 'dist')):
-        shutil.copy2(os.path.join(root_dir, 'dist', file), tmp)
+    subprocess.check_call(['python', 'setup.py', 'sdist', '--dist-dir', tmp], cwd=root_dir)
 
     shutil.copy2(os.path.join(source_dir, 'Dockerfile'), tmp)
 
