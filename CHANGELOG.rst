@@ -2,6 +2,22 @@
 CHANGELOG
 =========
 
+2.4.4dev
+========
+
+* bug-fix: correctly set NGINX_PROXY_READ_TIMEOUT to match model_sever_timeout.
+* enhancement: remove numpy version restriction.
+
+2.4.3
+=====
+
+* bug-fix: Fix recursive directory navigation in intermediate output.
+
+2.4.2
+=====
+
+* bug-fix: Rename libchangehostname to gethostname to match POSIX function name
+
 2.4.1
 =====
 

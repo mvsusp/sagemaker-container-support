@@ -44,7 +44,7 @@ def _upload_to_s3(s3_uploader, relative_path, file_path, filename):
     try:
         key = os.path.join(s3_uploader['key_prefix'], relative_path, filename)
         s3_uploader['transfer'].upload_file(file_path, s3_uploader['bucket'], key)
-    except FileNotFoundError:
+    except FileNotFoundError:  # noqa ignore=F821
         # Broken link or deleted
         pass
     except Exception:
@@ -61,7 +61,7 @@ def _copy_file(executor, s3_uploader, relative_path, filename):
         dst = os.path.join(tmp_dir_path, relative_path, '{}.{}'.format(_timestamp(), filename))
         shutil.copy2(src, dst)
         executor.submit(_upload_to_s3, s3_uploader, relative_path, dst, filename)
-    except FileNotFoundError:
+    except FileNotFoundError:  # noqa ignore=F821
         # Broken link or deleted
         pass
     except Exception:
@@ -97,7 +97,8 @@ def _watch(inotify, watchers, watch_flags, s3_uploader):
                 # for it which should cause any problems because when we copy files to temp dir
                 # we add a unique timestamp up to microseconds.
                 if flag is inotify_simple.flags.ISDIR and inotify_simple.flags.CREATE & event.mask:
-                    for folder, dirs, files in os.walk(os.path.join(intermediate_path, event.name)):
+                    path = os.path.join(intermediate_path, watchers[event.wd], event.name)
+                    for folder, dirs, files in os.walk(path):
                         wd = inotify.add_watch(folder, watch_flags)
                         relative_path = os.path.relpath(folder, intermediate_path)
                         watchers[wd] = relative_path
